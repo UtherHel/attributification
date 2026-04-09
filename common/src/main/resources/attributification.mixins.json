@@ -6,9 +6,9 @@
   "client": [
   ],
   "mixins": [
-    "AttributeContainerMixinNew",
+    "AttributeContainerMixin",
     "AttributeMixin",
-    "EntityAttributeInstanceMixinNew",
+    "EntityAttributeInstanceMixin",
     "ItemStackMixin"
   ],
   "injectors": {
