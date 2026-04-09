@@ -5,6 +5,7 @@ import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,10 +26,9 @@ public class AttributeMixin {
     /**
      * Changes translation key: source → target name
      */
-    @Inject(method = "getTranslationKey", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getTranslationKey", at = @At("HEAD"), cancellable = true)
     private void changeTranslationKey(CallbackInfoReturnable<String> cir) {
-        Boolean processing = isProcessing.get();
-        if (Boolean.TRUE.equals(processing)) return;
+        if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
         try {
@@ -36,7 +36,7 @@ public class AttributeMixin {
             if (unifier == null) return;
             
             EntityAttribute self = (EntityAttribute) (Object) this;
-            String sourceId = AttributeUtils.getAttributeId(self);
+            String sourceId = AttributeUtils.getAttributeIdDirect(self);
             
             if (sourceId == null || !unifier.shouldUnify(sourceId)) return;
             
@@ -44,13 +44,16 @@ public class AttributeMixin {
             if (mapping == null) return;
             
             // Get target attribute using AttributeUtils
-            EntityAttribute target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            RegistryEntry<EntityAttribute> targetEntry = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            if (targetEntry == null) return;
+            
+            EntityAttribute target = AttributeUtils.getValue(targetEntry);
             if (target == null || target == self) return;
             
             // Return target's translation key
             cir.setReturnValue(target.getTranslationKey());
         } finally {
-            isProcessing.set(false);
+            isProcessing.remove();
         }
     }
 }

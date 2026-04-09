@@ -8,6 +8,7 @@ import dev.utherhel.attributification.util.AttributeUtils;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,7 +29,7 @@ public class AttributeContainerMixin {
     
     // Cache: source -> target (or source if no mapping)
     @Unique
-    private static final Map<EntityAttribute, EntityAttribute> lookupCache = new HashMap<>();
+    private static final Map<RegistryEntry<EntityAttribute>, RegistryEntry<EntityAttribute>> lookupCache = new HashMap<>();
     
     // Register cache clear callback on class load
     static {
@@ -43,13 +44,13 @@ public class AttributeContainerMixin {
      * getAttribute(source) → getAttribute(target)
      */
     @Inject(method = "getCustomInstance", at = @At("HEAD"), cancellable = true)
-    private void redirectAttribute(EntityAttribute attribute, CallbackInfoReturnable<EntityAttributeInstance> cir) {
+    private void redirectAttribute(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<EntityAttributeInstance> cir) {
         Boolean processing = isProcessing.get();
         if (Boolean.TRUE.equals(processing)) return;
         
         isProcessing.set(true);
         try {
-            EntityAttribute target = getTargetAttribute(attribute);
+            RegistryEntry<EntityAttribute> target = getTargetAttribute(attribute);
             if (target != null && target != attribute) {
                 AttributeContainer self = (AttributeContainer) (Object) this;
                 EntityAttributeInstance targetInstance = self.getCustomInstance(target);
@@ -60,37 +61,35 @@ public class AttributeContainerMixin {
                 }
             }
         } finally {
-            isProcessing.set(false);
+            isProcessing.remove();
         }
     }
     
     /**
      * hasAttribute(source) → hasAttribute(target)
      */
-    @Inject(method = "hasAttribute(Lnet/minecraft/entity/attribute/EntityAttribute;)Z", at = @At("HEAD"), cancellable = true)
-    private void redirectHasAttribute(EntityAttribute attribute, CallbackInfoReturnable<Boolean> cir) {
-        Boolean processing = isProcessing.get();
-        if (Boolean.TRUE.equals(processing)) return;
+    @Inject(method = "hasAttribute", at = @At("HEAD"), cancellable = true)
+    private void redirectHasAttribute(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<Boolean> cir) {
+        if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
         try {
-            EntityAttribute target = getTargetAttribute(attribute);
+            RegistryEntry<EntityAttribute> target = getTargetAttribute(attribute);
             if (target != null && target != attribute) {
                 AttributeContainer self = (AttributeContainer) (Object) this;
                 cir.setReturnValue(self.hasAttribute(target));
             }
         } finally {
-            isProcessing.set(false);
+            isProcessing.remove();
         }
     }
     
     /**
      * getValue(source) → getValue(target) × equivalence (if bidirectional)
      */
-    @Inject(method = "getValue(Lnet/minecraft/entity/attribute/EntityAttribute;)D", at = @At("HEAD"), cancellable = true)
-    private void redirectGetValue(EntityAttribute attribute, CallbackInfoReturnable<Double> cir) {
-        Boolean processing = isProcessing.get();
-        if (Boolean.TRUE.equals(processing)) return;
+    @Inject(method = "getValue", at = @At("HEAD"), cancellable = true)
+    private void redirectGetValue(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<Double> cir) {
+        if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
         try {
@@ -120,7 +119,7 @@ public class AttributeContainerMixin {
                 return;
             }
             
-            EntityAttribute target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
             if (target == null || target == attribute) return;
             
             double targetValue = self.getValue(target);
@@ -141,7 +140,7 @@ public class AttributeContainerMixin {
             
             cir.setReturnValue(targetValue);
         } finally {
-            isProcessing.set(false);
+            isProcessing.remove();
         }
     }
     
@@ -149,9 +148,8 @@ public class AttributeContainerMixin {
      * getBaseValue(source) → getBaseValue(target) × equivalence (if bidirectional)
      */
     @Inject(method = "getBaseValue", at = @At("HEAD"), cancellable = true)
-    private void redirectGetBaseValue(EntityAttribute attribute, CallbackInfoReturnable<Double> cir) {
-        Boolean processing = isProcessing.get();
-        if (Boolean.TRUE.equals(processing)) return;
+    private void redirectGetBaseValue(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<Double> cir) {
+        if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
         try {
@@ -176,7 +174,7 @@ public class AttributeContainerMixin {
                 return;
             }
             
-            EntityAttribute target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
             if (target == null || target == attribute) return;
             
             AttributeContainer self = (AttributeContainer) (Object) this;
@@ -194,7 +192,7 @@ public class AttributeContainerMixin {
             
             cir.setReturnValue(targetBaseValue);
         } finally {
-            isProcessing.set(false);
+            isProcessing.remove();
         }
     }
     
@@ -202,9 +200,9 @@ public class AttributeContainerMixin {
      * Gets target attribute with caching
      */
     @Unique
-    private EntityAttribute getTargetAttribute(EntityAttribute attribute) {
+    private RegistryEntry<EntityAttribute> getTargetAttribute(RegistryEntry<EntityAttribute> attribute) {
         // Check static lookup cache first
-        EntityAttribute cachedResult = lookupCache.get(attribute);
+        RegistryEntry<EntityAttribute> cachedResult = lookupCache.get(attribute);
         if (cachedResult != null) {
             return cachedResult;
         }
@@ -247,7 +245,7 @@ public class AttributeContainerMixin {
         }
         
         // Normal bidirectional mode: redirect to target
-        EntityAttribute target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+        RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
         if (target != null && target != attribute) {
             lookupCache.put(attribute, target);
             return target;

@@ -1,23 +1,20 @@
 package dev.utherhel.attributification.mixin;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.item.ItemStack;
+import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * Shows target attribute in tooltip with converted values
@@ -29,88 +26,70 @@ public class ItemStackMixin {
     private static final ThreadLocal<Boolean> isProcessing = ThreadLocal.withInitial(() -> false);
     
     /**
-     * Converts source → target for tooltip display
+     * Wraps the consumer to convert source → target for tooltip display
+     * This targets the AttributeModifiersComponent.applyModifiers call inside applyAttributeModifier
      */
-    @Inject(method = "getAttributeModifiers", at = @At("RETURN"), cancellable = true)
-    private void convertTooltip(EquipmentSlot slot, CallbackInfoReturnable<Multimap<EntityAttribute, EntityAttributeModifier>> cir) {
-        Boolean processing = isProcessing.get();
-        if (Boolean.TRUE.equals(processing)) return;
+    @ModifyArg(
+        method = "applyAttributeModifier",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/component/type/AttributeModifiersComponent;applyModifiers(Lnet/minecraft/component/type/AttributeModifierSlot;Ljava/util/function/BiConsumer;)V"
+        ),
+        index = 1
+    )
+    private BiConsumer<RegistryEntry<EntityAttribute>, EntityAttributeModifier> wrapConsumerForTooltip(
+            BiConsumer<RegistryEntry<EntityAttribute>, EntityAttributeModifier> original) {
+        if (Boolean.TRUE.equals(isProcessing.get())) return original;
         
-        isProcessing.set(true);
-        try {
-            AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
-            if (unifier == null) return;
-            
-            Multimap<EntityAttribute, EntityAttributeModifier> original = cir.getReturnValue();
-            if (original.isEmpty()) return;
-            
-            Multimap<EntityAttribute, EntityAttributeModifier> converted = convertAttributes(original, unifier);
-            if (converted != null) {
-                cir.setReturnValue(converted);
+        AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
+        if (unifier == null) return original;
+        
+        // Return wrapped consumer that converts attributes
+        return (attribute, modifier) -> {
+            isProcessing.set(true);
+            try {
+                processModifier(attribute, modifier, original, unifier);
+            } finally {
+                isProcessing.remove();
             }
-        } finally {
-            isProcessing.set(false);
-        }
+        };
     }
     
     /**
-     * Converts all attributes in the multimap
+     * Processes a single modifier and applies conversion
      */
     @Unique
-    private Multimap<EntityAttribute, EntityAttributeModifier> convertAttributes(
-            Multimap<EntityAttribute, EntityAttributeModifier> original, AttributeUnifier unifier) {
-        Multimap<EntityAttribute, EntityAttributeModifier> converted = HashMultimap.create();
-        boolean hasChanges = false;
-        
-        for (Map.Entry<EntityAttribute, EntityAttributeModifier> entry : original.entries()) {
-            if (processAttributeEntry(entry, unifier, converted)) {
-                hasChanges = true;
-            }
-        }
-        
-        return hasChanges ? converted : null;
-    }
-    
-    /**
-     * Processes a single attribute entry
-     * @return true if changes were made
-     */
-    @Unique
-    private boolean processAttributeEntry(Map.Entry<EntityAttribute, EntityAttributeModifier> entry,
-                                          AttributeUnifier unifier,
-                                          Multimap<EntityAttribute, EntityAttributeModifier> converted) {
-        EntityAttribute sourceAttr = entry.getKey();
-        EntityAttributeModifier modifier = entry.getValue();
-        
+    private void processModifier(RegistryEntry<EntityAttribute> sourceAttr, EntityAttributeModifier modifier,
+                                 BiConsumer<RegistryEntry<EntityAttribute>, EntityAttributeModifier> consumer,
+                                 AttributeUnifier unifier) {
         String sourceId = AttributeUtils.getAttributeId(sourceAttr);
         if (sourceId == null || !unifier.shouldUnify(sourceId)) {
-            converted.put(sourceAttr, modifier);
-            return false;
+            consumer.accept(sourceAttr, modifier);
+            return;
         }
         
         AttributeMappingEntry mapping = unifier.getMapping(sourceId);
         if (mapping == null) {
-            converted.put(sourceAttr, modifier);
-            return false;
+            consumer.accept(sourceAttr, modifier);
+            return;
         }
         
-        EntityAttribute targetAttr = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+        RegistryEntry<EntityAttribute> targetAttr = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
         if (targetAttr == null) {
-            converted.put(sourceAttr, modifier);
-            return false;
+            consumer.accept(sourceAttr, modifier);
+            return;
         }
         
-        applyMapping(sourceId, sourceAttr, targetAttr, modifier, mapping, converted);
-        return true;
+        applyMapping(sourceId, sourceAttr, targetAttr, modifier, mapping, consumer);
     }
     
     /**
      * Applies mapping to modifier
      */
     @Unique
-    private void applyMapping(String sourceId, EntityAttribute sourceAttr, EntityAttribute targetAttr,
+    private void applyMapping(String sourceId, RegistryEntry<EntityAttribute> sourceAttr, RegistryEntry<EntityAttribute> targetAttr,
                              EntityAttributeModifier modifier, AttributeMappingEntry mapping,
-                             Multimap<EntityAttribute, EntityAttributeModifier> converted) {
+                             BiConsumer<RegistryEntry<EntityAttribute>, EntityAttributeModifier> consumer) {
         if (mapping.isFullReplacement()) {
             AttributificationLogger.info("[ItemStack] Hiding modifier for fullReplacement: " + sourceId);
             return;
@@ -118,14 +97,14 @@ public class ItemStackMixin {
         
         if (mapping.isOnlyVisualChange()) {
             AttributificationLogger.info("[ItemStack] Visual change only: " + sourceId + " -> " + AttributeUtils.getAttributeId(targetAttr));
-            converted.put(targetAttr, modifier);
+            consumer.accept(targetAttr, modifier);
             return;
         }
         
         EntityAttributeModifier convertedModifier = convertModifier(modifier, mapping);
         AttributificationLogger.info("[ItemStack] Converted tooltip: " + sourceId + " -> " + 
-            AttributeUtils.getAttributeId(targetAttr) + ", value: " + modifier.getValue() + " -> " + convertedModifier.getValue());
-        converted.put(targetAttr, convertedModifier);
+            AttributeUtils.getAttributeId(targetAttr) + ", value: " + modifier.value() + " -> " + convertedModifier.value());
+        consumer.accept(targetAttr, convertedModifier);
     }
     
     /**
@@ -133,22 +112,22 @@ public class ItemStackMixin {
      */
     @Unique
     private EntityAttributeModifier convertModifier(EntityAttributeModifier modifier, AttributeMappingEntry mapping) {
-        EntityAttributeModifier.Operation op = modifier.getOperation();
-        double value = modifier.getValue();
+        EntityAttributeModifier.Operation op = modifier.operation();
+        double value = modifier.value();
         
-        // Convert value (only for ADDITION)
-        if (op == EntityAttributeModifier.Operation.ADDITION) {
+        // Convert value (only for ADD_VALUE)
+        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
             value = value / mapping.getConversionEquivalence();
         }
         
         // Convert operation
-        if (op == EntityAttributeModifier.Operation.ADDITION) {
+        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
             switch (mapping.getOperationConversionType()) {
                 case ADDITION_TO_MULTIPLY_BASE:
-                    op = EntityAttributeModifier.Operation.MULTIPLY_BASE;
+                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE;
                     break;
                 case ADDITION_TO_MULTIPLY_TOTAL:
-                    op = EntityAttributeModifier.Operation.MULTIPLY_TOTAL;
+                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
                     break;
                 case DEFAULT:
                 default:
@@ -157,8 +136,7 @@ public class ItemStackMixin {
         }
         
         return new EntityAttributeModifier(
-            modifier.getId(),
-            modifier.getName(),
+            modifier.id(),
             value,
             op
         );

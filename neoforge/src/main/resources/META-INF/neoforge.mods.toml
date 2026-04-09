@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[47,)"
+loaderVersion = "[4,)"
 license = "MIT"
 
 [[mods]]
@@ -12,30 +12,26 @@ description = '''
 Unifies similar attributes from different mods with configurable conversion coefficients to prevent duplication and improve compatibility.
 '''
 
+[[mixins]]
+config = "attributification.mixins.json"
+
 [[dependencies.attributification]]
-modId = "forge"
-mandatory = true
-versionRange = "[47,)"
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.attributification]]
 modId = "minecraft"
-mandatory = true
-versionRange = "[1.20.1,)"
+type = "required"
+versionRange = "[1.21.1,)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.attributification]]
 modId = "architectury"
-mandatory = true
-versionRange = "[9.2.14,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies.attributification]]
-modId = "fzzy_config"
-mandatory = true
-versionRange = "[0.7.0,)"
+type = "required"
+versionRange = "[13.0.6,)"
 ordering = "AFTER"
 side = "BOTH"

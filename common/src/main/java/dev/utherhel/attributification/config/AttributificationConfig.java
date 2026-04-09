@@ -27,10 +27,11 @@ public class AttributificationConfig extends Config {
     public ValidatedList<StaticAttributeMappingEntry> staticMappings;
     
     @Comment("Dynamic mappings - runtime attribute conversion (reloadable)")
+    @RequiresAction(action = Action.RELOG)
     public ValidatedList<AttributeMappingEntry> dynamicMappings;
     
     public AttributificationConfig() {
-        super(new Identifier("attributification", "attributification"));
+        super(Identifier.of("attributification", "attributification"));
         
         ValidatedAny<StaticAttributeMappingEntry> staticHandler = new ValidatedAny<>(new StaticAttributeMappingEntry());
         ValidatedAny<AttributeMappingEntry> dynamicHandler = new ValidatedAny<>(new AttributeMappingEntry());
