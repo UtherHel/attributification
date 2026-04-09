@@ -1,0 +1,41 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+logoFile = "assets/attributification/icon.png"
+modId = "attributification"
+version = "${version}"
+displayName = "Attributification"
+authors = "UtherHel"
+description = '''
+Unifies similar attributes from different mods with configurable conversion coefficients to prevent duplication and improve compatibility.
+'''
+
+[[dependencies.attributification]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.attributification]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.attributification]]
+modId = "architectury"
+mandatory = true
+versionRange = "[9.2.14,)"
+ordering = "AFTER"
+side = "BOTH"
+
+[[dependencies.attributification]]
+modId = "fzzy_config"
+mandatory = true
+versionRange = "[0.7.0,)"
+ordering = "AFTER"
+side = "BOTH"

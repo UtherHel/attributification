@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "attributification",
+  "version": "${version}",
+  "name": "Attributification",
+  "description": "Unifies similar attributes from different mods with configurable conversion coefficients to prevent duplication and improve compatibility.",
+  "authors": [
+    "UtherHel"
+  ],
+  "contact": {
+    "homepage": "https://modrinth.com/mod/attributification"
+  },
+  "license": "MIT",
+  "icon": "assets/attributification/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.utherhel.attributification.fabric.AttributificationFabric"
+    ],
+    "client": [
+      "dev.utherhel.attributification.fabric.client.AttributificationFabricClient"
+    ]
+  },
+  "mixins": [
+    "attributification.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "architectury": ">=9.2.14",
+    "fabric-api": "*",
+    "fzzy_config": ">=0.7.0"
+  }
+}
