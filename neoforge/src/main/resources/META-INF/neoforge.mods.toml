@@ -15,6 +15,9 @@ Unifies similar attributes from different mods with configurable conversion coef
 [[mixins]]
 config = "attributification.mixins.json"
 
+[[mixins]]
+config = "attributification.neoforge.mixins.json"
+
 [[dependencies.attributification]]
 modId = "neoforge"
 type = "required"

@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "package": "dev.utherhel.attributification.neoforge.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+    "NeoForgeAttributeUtilMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

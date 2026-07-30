@@ -53,6 +53,16 @@ public class AttributeContainerMixin {
             RegistryEntry<EntityAttribute> target = getTargetAttribute(attribute);
             if (target != null && target != attribute) {
                 AttributeContainer self = (AttributeContainer) (Object) this;
+                
+                // CRITICAL: Check if entity actually has the target attribute
+                if (!self.hasAttribute(target)) {
+                    String sourceId = AttributeUtils.getAttributeId(attribute);
+                    String targetId = AttributeUtils.getAttributeId(target);
+                    AttributificationLogger.warn("[AttributeContainer] Target attribute does not exist on entity: " + 
+                        targetId + " (mapped from " + sourceId + ")");
+                    return;
+                }
+                
                 EntityAttributeInstance targetInstance = self.getCustomInstance(target);
                 if (targetInstance != null) {
                     AttributificationLogger.info("[AttributeContainer] Redirected getCustomInstance: " + 
@@ -122,6 +132,13 @@ public class AttributeContainerMixin {
             RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
             if (target == null || target == attribute) return;
             
+            // CRITICAL: Check if entity actually has the target attribute before trying to access it
+            if (!self.hasAttribute(target)) {
+                AttributificationLogger.warn("[AttributeContainer] Target attribute does not exist on entity: " + 
+                    AttributeUtils.getAttributeId(target) + " (mapped from " + sourceId + ")");
+                return;
+            }
+            
             double targetValue = self.getValue(target);
             
             // unidirectional: return target value directly (no equivalence multiplication)
@@ -178,6 +195,14 @@ public class AttributeContainerMixin {
             if (target == null || target == attribute) return;
             
             AttributeContainer self = (AttributeContainer) (Object) this;
+            
+            // CRITICAL: Check if entity actually has the target attribute before trying to access it
+            if (!self.hasAttribute(target)) {
+                AttributificationLogger.warn("[AttributeContainer] Target attribute does not exist on entity: " + 
+                    AttributeUtils.getAttributeId(target) + " (mapped from " + sourceId + ")");
+                return;
+            }
+            
             double targetBaseValue = self.getBaseValue(target);
             
             // unidirectional: return target base value directly (no equivalence)

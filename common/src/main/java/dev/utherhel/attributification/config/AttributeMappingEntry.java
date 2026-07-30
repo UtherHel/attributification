@@ -1,275 +1,251 @@
 package dev.utherhel.attributification.config;
 
-import me.fzzyhmstrs.fzzy_config.annotations.Comment;
-import me.fzzyhmstrs.fzzy_config.annotations.Translation;
-import me.fzzyhmstrs.fzzy_config.config.ConfigSection;
-import me.fzzyhmstrs.fzzy_config.util.AllowableStrings;
-import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedBoolean;
-import me.fzzyhmstrs.fzzy_config.validation.misc.ValidatedString;
-import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedDouble;
-import me.fzzyhmstrs.fzzy_config.validation.number.ValidatedNumber;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Attribute mapping entry for config GUI
+ * Attribute mapping entry — maps source → target with conversion parameters.
+ * Immutable after construction.
+ * <p>
+ * Supports multiple source patterns (with {@code *} wildcards), multiple target
+ * attributes (comma-separated fallback), and exclusion patterns.
  */
-@Translation(prefix = "attributification.config.mapping")
-public class AttributeMappingEntry extends ConfigSection {
-    
-    private static final String DEFAULT_SOURCE = "modid:attribute_name";
-    private static final String DEFAULT_TARGET = "modid:target_attribute";
-    
-    // AllowableStrings for attribute suggestions (accepts any string, but provides suggestions)
-    private static final AllowableStrings ATTRIBUTE_SUGGESTIONS = AttributeSuggestions.create(true);
-    
-    // AllowableStrings for operation conversion type
-    private static final AllowableStrings OPERATION_CONVERSION_SUGGESTIONS = new AllowableStrings(
-        s -> s.equals("DEFAULT") || s.equals("ADDITION_TO_MULTIPLY_BASE") || s.equals("ADDITION_TO_MULTIPLY_TOTAL"),
-        () -> List.of("DEFAULT", "ADDITION_TO_MULTIPLY_BASE", "ADDITION_TO_MULTIPLY_TOTAL")
-    );
-    
-    @Comment("Source attribute")
-    public ValidatedString sourceAttribute = new ValidatedString("", ATTRIBUTE_SUGGESTIONS);
-    
-    @Comment("Target attribute (comma-separated for fallback)")
-    public ValidatedString targetAttribute = new ValidatedString("", ATTRIBUTE_SUGGESTIONS);
-    
-    @Comment("Virtual display multiplier")
-    public ValidatedDouble equivalence = new ValidatedDouble(1.0, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-    
-    @Comment("Modifier conversion divisor (0 = use equivalence)")
-    public ValidatedDouble conversionEquivalence = new ValidatedDouble(0.0, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-    
-    @Comment("Direct redirection (no virtual value)")
-    public ValidatedBoolean unidirectional = new ValidatedBoolean(false);
-    
-    @Comment("Visual rename only")
-    public ValidatedBoolean onlyVisualChange = new ValidatedBoolean(false);
-    
-    @Comment("Freeze source, only target works")
-    public ValidatedBoolean fullReplacement = new ValidatedBoolean(false);
-    
-    @Comment("Subtract from target for display")
-    public ValidatedDouble subtractValue = new ValidatedDouble(0.0, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-    
-    @Comment("Operation conversion")
-    public ValidatedString operationConversion = new ValidatedString("DEFAULT", OPERATION_CONVERSION_SUGGESTIONS);
-    
+public class AttributeMappingEntry {
+
+    private final String sourceAttribute;
+    private final String targetAttribute;
+    private final List<String> targetAttributes;
+    private final double equivalence;
+    private final double conversionEquivalence;
+    private final boolean unidirectional;
+    private final boolean onlyVisualChange;
+    private final boolean fullReplacement;
+    private final double subtractValue;
+    private final String operationConversion;
+    private final OperationConversionType operationConversionType;
+
+    // New multi-source / exclude support
+    private final List<String> sources;
+    private final List<String> exclude;
+
     /**
-     * Default constructor
+     * Full constructor with sources and exclude lists.
      */
-    public AttributeMappingEntry() {
-        this.sourceAttribute = new ValidatedString(DEFAULT_SOURCE, ATTRIBUTE_SUGGESTIONS);
-        this.targetAttribute = new ValidatedString(DEFAULT_TARGET, ATTRIBUTE_SUGGESTIONS);
-        this.equivalence = new ValidatedDouble(1.0, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-        this.conversionEquivalence = new ValidatedDouble(0.0, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-        this.unidirectional = new ValidatedBoolean(false);
-        this.onlyVisualChange = new ValidatedBoolean(false);
-        this.fullReplacement = new ValidatedBoolean(false);
-        this.subtractValue = new ValidatedDouble(0.0, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-        this.operationConversion = new ValidatedString("DEFAULT", OPERATION_CONVERSION_SUGGESTIONS);
+    public AttributeMappingEntry(
+        String sourceAttribute,
+        String targetAttribute,
+        double equivalence,
+        double conversionEquivalence,
+        boolean unidirectional,
+        boolean onlyVisualChange,
+        boolean fullReplacement,
+        double subtractValue,
+        String operationConversion,
+        List<String> sources,
+        List<String> exclude
+    ) {
+        this.sourceAttribute = sourceAttribute;
+        this.targetAttribute = targetAttribute;
+        this.equivalence = equivalence;
+        this.conversionEquivalence = conversionEquivalence;
+        this.unidirectional = unidirectional;
+        this.onlyVisualChange = onlyVisualChange;
+        this.fullReplacement = fullReplacement;
+        this.subtractValue = subtractValue;
+        this.operationConversion =
+            operationConversion != null ? operationConversion : "DEFAULT";
+
+        // Parse target attributes eagerly
+        this.targetAttributes = parseTargetAttributes(targetAttribute);
+
+        // Parse operation conversion type eagerly
+        OperationConversionType parsedType;
+        try {
+            parsedType = OperationConversionType.valueOf(
+                this.operationConversion
+            );
+        } catch (IllegalArgumentException e) {
+            parsedType = OperationConversionType.DEFAULT;
+        }
+        this.operationConversionType = parsedType;
+
+        // Store sources / exclude
+        this.sources = sources != null ? List.copyOf(sources) : List.of();
+        this.exclude = exclude != null ? List.copyOf(exclude) : List.of();
     }
-    
+
     /**
-     * Translation key for config GUI
+     * Full constructor (backward compat — uses sourceAttribute as single source).
      */
-    @Override
-    public String translationKey() {
-        String source = getSourceAttribute();
-        String target = getTargetAttribute();
-        
-        if (isDefaultMapping(source, target)) {
-            return "attributification.config.mapping.new";
-        }
-        
-        return buildMappingSummary(source, target);
+    public AttributeMappingEntry(
+        String sourceAttribute,
+        String targetAttribute,
+        double equivalence,
+        double conversionEquivalence,
+        boolean unidirectional,
+        boolean onlyVisualChange,
+        boolean fullReplacement,
+        double subtractValue,
+        String operationConversion
+    ) {
+        this(
+            sourceAttribute,
+            targetAttribute,
+            equivalence,
+            conversionEquivalence,
+            unidirectional,
+            onlyVisualChange,
+            fullReplacement,
+            subtractValue,
+            operationConversion,
+            List.of(sourceAttribute),
+            List.of()
+        );
     }
-    
-    private boolean isDefaultMapping(String source, String target) {
-        return (source == null || source.isEmpty() || source.equals(DEFAULT_SOURCE)) &&
-               (target == null || target.isEmpty() || target.equals(DEFAULT_TARGET));
-    }
-    
-    private String buildMappingSummary(String source, String target) {
-        StringBuilder summary = new StringBuilder();
-        
-        summary.append(formatSource(source));
-        summary.append(" → ");
-        summary.append(formatTarget(target));
-        appendModifiers(summary);
-        
-        return summary.toString();
-    }
-    
-    private String formatSource(String source) {
-        return (source != null && !source.isEmpty() && !source.equals(DEFAULT_SOURCE)) ? source : "???";
-    }
-    
-    private String formatTarget(String target) {
-        if (target == null || target.isEmpty() || target.equals(DEFAULT_TARGET)) {
-            return "???";
-        }
-        return target.length() > 30 ? target.substring(0, 27) + "..." : target;
-    }
-    
-    private void appendModifiers(StringBuilder summary) {
-        if (getEquivalence() != 1.0) {
-            summary.append(" [×").append(String.format("%.1f", getEquivalence())).append("]");
-        }
-        if (isUnidirectional()) {
-            summary.append(" [→]");
-        }
-        if (isFullReplacement()) {
-            summary.append(" [R]");
-        }
-        if (isOnlyVisualChange()) {
-            summary.append(" [V]");
-        }
-    }
-    
+
     /**
-     * Full constructor
+     * Parses comma-separated target attributes into a list.
      */
-    public AttributeMappingEntry(String sourceAttribute, String targetAttribute, double equivalence,
-                                 double conversionEquivalence, boolean unidirectional, boolean onlyVisualChange,
-                                 boolean fullReplacement, double subtractValue, String operationConversion) {
-        this.sourceAttribute = new ValidatedString(sourceAttribute, ATTRIBUTE_SUGGESTIONS);
-        this.targetAttribute = new ValidatedString(targetAttribute, ATTRIBUTE_SUGGESTIONS);
-        this.equivalence = new ValidatedDouble(equivalence, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-        this.conversionEquivalence = new ValidatedDouble(conversionEquivalence, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-        this.unidirectional = new ValidatedBoolean(unidirectional);
-        this.onlyVisualChange = new ValidatedBoolean(onlyVisualChange);
-        this.fullReplacement = new ValidatedBoolean(fullReplacement);
-        this.subtractValue = new ValidatedDouble(subtractValue, Double.MAX_VALUE, 0.0, ValidatedNumber.WidgetType.TEXTBOX);
-        this.operationConversion = new ValidatedString(operationConversion != null ? operationConversion : "DEFAULT", OPERATION_CONVERSION_SUGGESTIONS);
-    }
-    
-    // Getters
-    
-    public String getSourceAttribute() {
-        return sourceAttribute.get();
-    }
-    
-    public String getTargetAttribute() {
-        return targetAttribute.get();
-    }
-    
-    // Cached parsed target attributes
-    private String cachedTargetAttributeValue;
-    private List<String> cachedTargetAttributesList;
-    
-    public List<String> getTargetAttributes() {
-        String targetValue = targetAttribute.get();
-        
-        // Return cached value if unchanged
-        if (cachedTargetAttributeValue != null && cachedTargetAttributeValue.equals(targetValue)) {
-            return cachedTargetAttributesList;
-        }
-        
-        // Parse and cache
-        cachedTargetAttributeValue = targetValue;
-        cachedTargetAttributesList = new ArrayList<>();
-        
+    private static List<String> parseTargetAttributes(String targetValue) {
+        List<String> result = new ArrayList<>();
         if (targetValue != null && !targetValue.isEmpty()) {
             String[] parts = targetValue.split(",");
             for (String part : parts) {
                 String trimmed = part.trim();
                 if (!trimmed.isEmpty()) {
-                    cachedTargetAttributesList.add(trimmed);
+                    result.add(trimmed);
                 }
             }
         }
-        
-        return cachedTargetAttributesList;
+        return result;
     }
-    
+
+    // --- Getters ---
+
+    public String getSourceAttribute() {
+        return sourceAttribute;
+    }
+
+    public String getTargetAttribute() {
+        return targetAttribute;
+    }
+
+    public List<String> getTargetAttributes() {
+        return targetAttributes;
+    }
+
+    public List<String> getSources() {
+        return sources;
+    }
+
+    public List<String> getExclude() {
+        return exclude;
+    }
+
+    /**
+     * Returns source patterns for wildcard matching.
+     * Falls back to {@link #getSourceAttribute()} wrapped in a list.
+     */
+    public List<String> getSourcePatterns() {
+        if (!sources.isEmpty()) return sources;
+        if (
+            sourceAttribute != null && !sourceAttribute.isEmpty()
+        ) return List.of(sourceAttribute);
+        return List.of();
+    }
+
     public double getEquivalence() {
-        return equivalence.get();
+        return equivalence;
     }
-    
+
     public double getConversionEquivalence() {
-        double conv = conversionEquivalence.get();
-        return conv != 0.0 ? conv : equivalence.get();
+        return conversionEquivalence != 0.0
+            ? conversionEquivalence
+            : equivalence;
     }
-    
+
     public boolean isUnidirectional() {
-        return unidirectional.get();
+        return unidirectional;
     }
-    
+
     public boolean isOnlyVisualChange() {
-        return onlyVisualChange.get();
+        return onlyVisualChange;
     }
-    
+
     public boolean isFullReplacement() {
-        return fullReplacement.get();
+        return fullReplacement;
     }
-    
+
     public double getSubtractValue() {
-        return subtractValue.get();
+        return subtractValue;
     }
-    
+
     public String getOperationConversion() {
-        return operationConversion.get();
+        return operationConversion;
     }
-    
+
     public OperationConversionType getOperationConversionType() {
-        String opConv = operationConversion.get();
-        if (opConv == null || opConv.isEmpty()) {
-            return OperationConversionType.DEFAULT;
-        }
-        try {
-            return OperationConversionType.valueOf(opConv);
-        } catch (IllegalArgumentException e) {
-            return OperationConversionType.DEFAULT;
-        }
+        return operationConversionType;
     }
-    
+
     @Override
     public String toString() {
-        String flags = "";
-        if (isUnidirectional()) flags += " [→]";
-        if (isOnlyVisualChange()) flags += " [Visual]";
-        if (isFullReplacement()) flags += " [Replace]";
-        if (getSubtractValue() != 0.0) flags += String.format(" [Subtract:%.1f]", getSubtractValue());
-        if (!getOperationConversion().equals("DEFAULT")) {
-            flags += " [" + getOperationConversion() + "]";
-        }
-        return String.format("%s -> %s (x%.2f)%s", getSourceAttribute(), getTargetAttribute(), getEquivalence(), flags);
+        StringBuilder sb = new StringBuilder();
+        sb.append(sources.isEmpty() ? sourceAttribute : sources)
+            .append(" -> ")
+            .append(targetAttribute);
+        sb.append(" (x").append(String.format("%.2f", equivalence)).append(")");
+        if (unidirectional) sb.append(" [→]");
+        if (onlyVisualChange) sb.append(" [Visual]");
+        if (fullReplacement) sb.append(" [Replace]");
+        if (subtractValue != 0.0) sb.append(
+            String.format(" [Subtract:%.1f]", subtractValue)
+        );
+        if (!"DEFAULT".equals(operationConversion)) sb.append(" [")
+            .append(operationConversion)
+            .append("]");
+        if (!exclude.isEmpty()) sb.append(" [excl: ")
+            .append(exclude.size())
+            .append("]");
+        return sb.toString();
     }
-    
-    /**
-     * Checks if mapping changed
-     */
+
     @Override
-    public boolean deserializedChanged(Object old, Object newValue) {
-        if (!isValidComparison(old, newValue)) {
-            return true;
-        }
-        
-        AttributeMappingEntry oldEntry = (AttributeMappingEntry) old;
-        AttributeMappingEntry newEntry = (AttributeMappingEntry) newValue;
-        
-        return hasFieldChanges(oldEntry, newEntry);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof AttributeMappingEntry that)) return false;
+        return (
+            Double.compare(equivalence, that.equivalence) == 0 &&
+            Double.compare(conversionEquivalence, that.conversionEquivalence) ==
+                0 &&
+            unidirectional == that.unidirectional &&
+            onlyVisualChange == that.onlyVisualChange &&
+            fullReplacement == that.fullReplacement &&
+            Double.compare(subtractValue, that.subtractValue) == 0 &&
+            Objects.equals(sourceAttribute, that.sourceAttribute) &&
+            Objects.equals(targetAttribute, that.targetAttribute) &&
+            Objects.equals(operationConversion, that.operationConversion) &&
+            Objects.equals(sources, that.sources) &&
+            Objects.equals(exclude, that.exclude)
+        );
     }
-    
-    private boolean isValidComparison(Object old, Object newValue) {
-        if (old == null || newValue == null) {
-            return false;
-        }
-        return old instanceof AttributeMappingEntry && newValue instanceof AttributeMappingEntry;
-    }
-    
-    private boolean hasFieldChanges(AttributeMappingEntry oldEntry, AttributeMappingEntry newEntry) {
-        return !java.util.Objects.equals(oldEntry.sourceAttribute.get(), newEntry.sourceAttribute.get()) ||
-               !java.util.Objects.equals(oldEntry.targetAttribute.get(), newEntry.targetAttribute.get()) ||
-               !java.util.Objects.equals(oldEntry.equivalence.get(), newEntry.equivalence.get()) ||
-               !java.util.Objects.equals(oldEntry.conversionEquivalence.get(), newEntry.conversionEquivalence.get()) ||
-               !java.util.Objects.equals(oldEntry.unidirectional.get(), newEntry.unidirectional.get()) ||
-               !java.util.Objects.equals(oldEntry.onlyVisualChange.get(), newEntry.onlyVisualChange.get()) ||
-               !java.util.Objects.equals(oldEntry.fullReplacement.get(), newEntry.fullReplacement.get()) ||
-               !java.util.Objects.equals(oldEntry.subtractValue.get(), newEntry.subtractValue.get()) ||
-               !java.util.Objects.equals(oldEntry.operationConversion.get(), newEntry.operationConversion.get());
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+            sourceAttribute,
+            targetAttribute,
+            equivalence,
+            conversionEquivalence,
+            unidirectional,
+            onlyVisualChange,
+            fullReplacement,
+            subtractValue,
+            operationConversion,
+            sources,
+            exclude
+        );
     }
 }

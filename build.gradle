@@ -26,10 +26,6 @@ subprojects {
 
     repositories {
         maven {
-            name = "FzzyMaven"
-            url = "https://maven.fzzyhmstrs.me/"
-        }
-        maven {
             name 'Xander Maven'
             url 'https://maven.isxander.dev/releases'
         }

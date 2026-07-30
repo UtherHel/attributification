@@ -2,26 +2,31 @@ package dev.utherhel.attributification;
 
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.config.AttributificationConfig;
+import java.util.*;
+import java.util.regex.Pattern;
 import net.minecraft.util.Identifier;
 
-import java.util.*;
-
 /**
- * OPTIMIZED: Maps source → target, tracks Identifiers for cleanup
- * Implements bidirectional caching for fast lookups
+ * Maps source → target with wildcard support and exclusion patterns.
+ * Implements bidirectional caching for fast lookups.
  */
 public class AttributeUnifier {
+
     private final AttributificationConfig config;
-    
-    // Forward cache: source → mapping
+
+    // Forward cache: exact source → mapping
     private final Map<String, AttributeMappingEntry> sourceToMapping;
-    
+
+    // Wildcard sources: list of (compiled pattern, entry) for dynamic matching
+    private final List<WildcardEntry> wildcardSources;
+
     // Reverse cache: target → mapping (for EntityAttributeInstanceMixin)
     private final Map<String, AttributeMappingEntry> targetToMapping;
-    
+
     // Tracks modifier Identifiers: target → Set<Identifier>
-    private final Map<String, Set<Identifier>> redirectedModifiers = new HashMap<>();
-    
+    private final Map<String, Set<Identifier>> redirectedModifiers =
+        new HashMap<>();
+
     // Tracks source for each Identifier: Identifier → source
     private final Map<Identifier, String> modifierSourceMap = new HashMap<>();
 
@@ -29,17 +34,28 @@ public class AttributeUnifier {
         this.config = config;
         this.sourceToMapping = new HashMap<>();
         this.targetToMapping = new HashMap<>();
+        this.wildcardSources = new ArrayList<>();
         rebuildCache();
     }
 
     private void rebuildCache() {
         sourceToMapping.clear();
         targetToMapping.clear();
-        
+        wildcardSources.clear();
+
         for (AttributeMappingEntry mapping : config.getMappings()) {
-            // Forward: source → mapping
-            sourceToMapping.put(mapping.getSourceAttribute(), mapping);
-            
+            List<String> patterns = mapping.getSourcePatterns();
+
+            for (String pattern : patterns) {
+                if (pattern.contains("*")) {
+                    // Wildcard pattern — compile and add to wildcard list
+                    wildcardSources.add(new WildcardEntry(pattern, mapping));
+                } else {
+                    // Exact match — add to forward cache
+                    sourceToMapping.put(pattern, mapping);
+                }
+            }
+
             // Reverse: each target → mapping
             for (String targetId : mapping.getTargetAttributes()) {
                 targetToMapping.put(targetId, mapping);
@@ -48,21 +64,44 @@ public class AttributeUnifier {
     }
 
     /**
-     * Is this a source attribute?
+     * Checks if an attribute ID should be unified.
+     * First checks exact cache, then wildcard patterns with exclusion support.
      */
     public boolean shouldUnify(String attributeId) {
-        return sourceToMapping.containsKey(attributeId);
+        // Fast path: exact match
+        if (sourceToMapping.containsKey(attributeId)) return true;
+
+        // Slow path: check wildcards
+        for (WildcardEntry wc : wildcardSources) {
+            if (wc.matches(attributeId) && !wc.isExcluded(attributeId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Get mapping for source attribute
+     * Get mapping for a source attribute.
+     * Supports wildcard matching.
      */
     public AttributeMappingEntry getMapping(String sourceAttribute) {
-        return sourceToMapping.get(sourceAttribute);
+        // Fast path: exact match
+        AttributeMappingEntry exact = sourceToMapping.get(sourceAttribute);
+        if (exact != null) return exact;
+
+        // Slow path: wildcard matching
+        for (WildcardEntry wc : wildcardSources) {
+            if (
+                wc.matches(sourceAttribute) && !wc.isExcluded(sourceAttribute)
+            ) {
+                return wc.entry;
+            }
+        }
+        return null;
     }
-    
+
     /**
-     * Get mapping for target attribute (used by EntityAttributeInstanceMixin)
+     * Get mapping for target attribute (reverse lookup).
      */
     public AttributeMappingEntry getMappingByTarget(String targetAttribute) {
         return targetToMapping.get(targetAttribute);
@@ -75,20 +114,25 @@ public class AttributeUnifier {
         return targetToMapping.containsKey(attributeId);
     }
 
-    /**
-     * Track modifier: source → target
-     */
-    public synchronized void trackRedirectedModifier(String sourceAttributeId, String targetAttributeId, Identifier modifierId) {
-        redirectedModifiers.computeIfAbsent(targetAttributeId, k -> new HashSet<>()).add(modifierId);
+    // ── Modifier tracking ─────────────────────────────────────────
+
+    public synchronized void trackRedirectedModifier(
+        String sourceAttributeId,
+        String targetAttributeId,
+        Identifier modifierId
+    ) {
+        redirectedModifiers
+            .computeIfAbsent(targetAttributeId, k -> new HashSet<>())
+            .add(modifierId);
         if (sourceAttributeId != null) {
             modifierSourceMap.put(modifierId, sourceAttributeId);
         }
     }
 
-    /**
-     * Untrack modifier
-     */
-    public synchronized void untrackRedirectedModifier(String targetAttributeId, Identifier modifierId) {
+    public synchronized void untrackRedirectedModifier(
+        String targetAttributeId,
+        Identifier modifierId
+    ) {
         Set<Identifier> ids = redirectedModifiers.get(targetAttributeId);
         if (ids != null) {
             ids.remove(modifierId);
@@ -99,19 +143,25 @@ public class AttributeUnifier {
         modifierSourceMap.remove(modifierId);
     }
 
-    /**
-     * Get all Identifiers for target
-     */
-    public synchronized Set<Identifier> getRedirectedModifiers(String targetAttributeId) {
-        return new HashSet<>(redirectedModifiers.getOrDefault(targetAttributeId, Collections.emptySet()));
+    public synchronized Set<Identifier> getRedirectedModifiers(
+        String targetAttributeId
+    ) {
+        return new HashSet<>(
+            redirectedModifiers.getOrDefault(
+                targetAttributeId,
+                Collections.emptySet()
+            )
+        );
     }
 
-    /**
-     * Get all Identifiers created by source
-     */
-    public synchronized Set<Identifier> getModifiersBySource(String sourceAttributeId) {
+    public synchronized Set<Identifier> getModifiersBySource(
+        String sourceAttributeId
+    ) {
         Set<Identifier> result = new HashSet<>();
-        for (Map.Entry<Identifier, String> entry : modifierSourceMap.entrySet()) {
+        for (Map.Entry<
+            Identifier,
+            String
+        > entry : modifierSourceMap.entrySet()) {
             if (entry.getValue().equals(sourceAttributeId)) {
                 result.add(entry.getKey());
             }
@@ -119,17 +169,81 @@ public class AttributeUnifier {
         return result;
     }
 
-    /**
-     * Get source for Identifier
-     */
     public synchronized String getModifierSource(Identifier modifierId) {
         return modifierSourceMap.get(modifierId);
     }
 
-    /**
-     * Get config
-     */
     public AttributificationConfig getConfig() {
         return config;
+    }
+
+    /**
+     * Internal: a wildcard source pattern with compiled regex and exclusion list.
+     */
+    private static class WildcardEntry {
+
+        final String rawPattern;
+        final Pattern regex;
+        final AttributeMappingEntry entry;
+        final List<Pattern> excludePatterns;
+
+        WildcardEntry(String pattern, AttributeMappingEntry entry) {
+            this.rawPattern = pattern;
+            this.regex = compileGlob(pattern);
+            this.entry = entry;
+            this.excludePatterns = entry
+                .getExclude()
+                .stream()
+                .map(AttributeUnifier::compileGlob)
+                .toList();
+        }
+
+        boolean matches(String id) {
+            return regex.matcher(id).matches();
+        }
+
+        boolean isExcluded(String id) {
+            for (Pattern ex : excludePatterns) {
+                if (ex.matcher(id).matches()) return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Converts a glob pattern (with {@code *}) to a regex.
+     * {@code *} matches any sequence of characters within a single namespace path segment,
+     * or across colon if the pattern doesn't have one.
+     */
+    static Pattern compileGlob(String pattern) {
+        // Escape everything except *
+        StringBuilder sb = new StringBuilder("^");
+        for (int i = 0; i < pattern.length(); i++) {
+            char c = pattern.charAt(i);
+            if (c == '*') {
+                sb.append(".*"); // * matches anything
+            } else if (
+                c == '.' ||
+                c == ':' ||
+                c == '/' ||
+                c == '\\' ||
+                c == '(' ||
+                c == ')' ||
+                c == '[' ||
+                c == ']' ||
+                c == '{' ||
+                c == '}' ||
+                c == '+' ||
+                c == '^' ||
+                c == '$' ||
+                c == '|'
+            ) {
+                sb.append('\\').append(c);
+            } else {
+                sb.append(c);
+            }
+        }
+        sb.append('$');
+        return Pattern.compile(sb.toString());
     }
 }

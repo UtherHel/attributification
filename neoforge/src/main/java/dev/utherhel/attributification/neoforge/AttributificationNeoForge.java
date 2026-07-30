@@ -1,12 +1,59 @@
 package dev.utherhel.attributification.neoforge;
 
 import dev.utherhel.attributification.Attributifaction;
+import dev.utherhel.attributification.attribute.MappingLoader;
+import dev.utherhel.attributification.neoforge.config.AttributificationNeoForgeConfig;
+import dev.utherhel.attributification.neoforge.gui.AttributificationPayloadHandler;
+import net.minecraft.resource.SynchronousResourceReloader;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 
 @Mod(Attributifaction.MOD_ID)
 public final class AttributificationNeoForge {
-    public AttributificationNeoForge(IEventBus modEventBus) {
-        Attributifaction.init();
+
+    public AttributificationNeoForge(
+        IEventBus modEventBus,
+        ModContainer container
+    ) {
+        // Create and register the NeoForge ModConfigSpec first
+        var neoforgeConfig = AttributificationNeoForgeConfig.createAndRegister(
+            container
+        );
+
+        // Run our common setup with the platform config
+        Attributifaction.init(neoforgeConfig);
+
+        // Register event handlers on the NeoForge event bus (not mod bus)
+        NeoForge.EVENT_BUS.register(AttributificationNeoForgeEvents.class);
+        NeoForge.EVENT_BUS.register(this);
+
+        // Register GUI event handlers on the mod event bus
+        modEventBus.register(AttributificationPayloadHandler.class);
+    }
+
+    /**
+     * Captures the current ResourceManager so the GUI payload handler
+     * can resolve built-in datapack files and trigger reloads.
+     */
+    @SubscribeEvent
+    public void onDatapackSync(OnDatapackSyncEvent event) {
+        AttributificationPayloadHandler.currentResourceManager = event
+            .getPlayerList()
+            .getServer()
+            .getResourceManager();
+    }
+
+    /**
+     * Registers our datapack reload listener.
+     * Called on server start and /reload.
+     */
+    @SubscribeEvent
+    public void onAddReloadListener(AddReloadListenerEvent event) {
+        event.addListener((SynchronousResourceReloader) MappingLoader::load);
     }
 }

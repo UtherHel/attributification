@@ -1,41 +1,29 @@
 package dev.utherhel.attributification.config;
 
-import me.fzzyhmstrs.fzzy_config.util.AllowableStrings;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 /**
- * Provides smart autosuggestions for attribute IDs
+ * Provides utility methods for attribute ID lookups and suggestions.
  */
 public final class AttributeSuggestions {
-    
+
     private AttributeSuggestions() {
         throw new UnsupportedOperationException("Utility class");
     }
-    
-    /**
-     * Creates AllowableStrings for attribute suggestions
-     * @param acceptAny If true, accepts any string (for user input). If false, only accepts registered attributes
-     */
-    public static AllowableStrings create(boolean acceptAny) {
-        Predicate<String> predicate = acceptAny ? s -> true : AttributeSuggestions::isValidAttribute;
-        Supplier<List<String>> supplier = AttributeSuggestions::getAllAttributeIds;
-        return new AllowableStrings(predicate, supplier);
-    }
-    
+
     /**
      * Checks if a string is a valid registered attribute ID
      */
-    private static boolean isValidAttribute(String id) {
+    public static boolean isValidAttribute(String id) {
         if (id == null || id.isEmpty()) {
             return false;
         }
-        
+
         // Allow comma-separated list for fallback attributes
         if (id.contains(",")) {
             String[] parts = id.split(",");
@@ -47,14 +35,14 @@ public final class AttributeSuggestions {
             }
             return true;
         }
-        
+
         return isValidSingleAttribute(id);
     }
-    
+
     /**
      * Checks if a single attribute ID is valid
      */
-    private static boolean isValidSingleAttribute(String id) {
+    public static boolean isValidSingleAttribute(String id) {
         try {
             Identifier identifier = Identifier.tryParse(id);
             if (identifier == null) {
@@ -65,25 +53,27 @@ public final class AttributeSuggestions {
             return false;
         }
     }
-    
+
     /**
      * Gets all registered attribute IDs sorted alphabetically
      */
-    private static List<String> getAllAttributeIds() {
+    public static List<String> getAllAttributeIds() {
         List<String> attributeIds = new ArrayList<>();
         Map<String, List<String>> attributesByName = new LinkedHashMap<>();
-        
+
         // Collect all attributes grouped by name
         for (EntityAttribute attribute : Registries.ATTRIBUTE) {
             Identifier id = Registries.ATTRIBUTE.getId(attribute);
             if (id != null) {
                 String fullId = id.toString();
                 String name = id.getPath();
-                
-                attributesByName.computeIfAbsent(name, k -> new ArrayList<>()).add(fullId);
+
+                attributesByName
+                    .computeIfAbsent(name, k -> new ArrayList<>())
+                    .add(fullId);
             }
         }
-        
+
         // Add all IDs sorted
         List<String> allIds = new ArrayList<>();
         for (List<String> ids : attributesByName.values()) {
@@ -91,29 +81,31 @@ public final class AttributeSuggestions {
         }
         allIds.sort(String::compareTo);
         attributeIds.addAll(allIds);
-        
+
         return attributeIds;
     }
-    
+
     /**
      * Gets attribute IDs grouped by namespace
      */
     public static Map<String, List<String>> getAttributesByNamespace() {
         Map<String, List<String>> byNamespace = new LinkedHashMap<>();
-        
+
         for (EntityAttribute attribute : Registries.ATTRIBUTE) {
             Identifier id = Registries.ATTRIBUTE.getId(attribute);
             if (id != null) {
                 String namespace = id.getNamespace();
-                byNamespace.computeIfAbsent(namespace, k -> new ArrayList<>()).add(id.toString());
+                byNamespace
+                    .computeIfAbsent(namespace, k -> new ArrayList<>())
+                    .add(id.toString());
             }
         }
-        
+
         // Sort each namespace's list
         for (List<String> ids : byNamespace.values()) {
             ids.sort(String::compareTo);
         }
-        
+
         return byNamespace;
     }
 }
