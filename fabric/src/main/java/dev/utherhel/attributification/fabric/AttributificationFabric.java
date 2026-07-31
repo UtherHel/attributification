@@ -1,17 +1,18 @@
 package dev.utherhel.attributification.fabric;
 
-import net.fabricmc.api.ModInitializer;
-
 import dev.utherhel.attributification.Attributifaction;
+import dev.utherhel.attributification.config.LogLevel;
+import dev.utherhel.attributification.fabric.config.AttributificationFabricConfig;
+import dev.utherhel.attributification.fabric.gui.AttributificationFabricCommand;
+import dev.utherhel.attributification.fabric.gui.AttributificationFabricPayloadHandler;
+import net.fabricmc.api.ModInitializer;
 
 public final class AttributificationFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        // This code runs as soon as Minecraft is in a mod-load-ready state.
-        // However, some things (like resources) may still be uninitialized.
-        // Proceed with mild caution.
-
-        // Run our common setup.
-        Attributifaction.init();
+        LogLevel logLevel = AttributificationFabricConfig.loadLogLevel();
+        Attributifaction.init(logLevel);
+        AttributificationFabricCommand.register();
+        AttributificationFabricPayloadHandler.register();
     }
 }

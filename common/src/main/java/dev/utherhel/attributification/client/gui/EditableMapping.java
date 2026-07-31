@@ -1,0 +1,266 @@
+package dev.utherhel.attributification.client.gui;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import java.util.ArrayList;
+import java.util.List;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+@Environment(EnvType.CLIENT)
+final class EditableMapping {
+
+    private static final Gson GSON = new GsonBuilder()
+        .setPrettyPrinting()
+        .disableHtmlEscaping()
+        .create();
+
+    enum Mode {
+        BIDIRECTIONAL("bidirectional"),
+        UNIDIRECTIONAL("unidirectional"),
+        ONLY_VISUAL_CHANGE("onlyVisualChange"),
+        FULL_REPLACEMENT("fullReplacement");
+
+        final String id;
+
+        Mode(String id) {
+            this.id = id;
+        }
+
+        Text label() {
+            return Text.translatable(
+                "gui.attributification.mappings.mode." + id
+            );
+        }
+
+        Text description() {
+            return Text.translatable(
+                "gui.attributification.mappings.mode." + id + ".desc"
+            );
+        }
+
+        static Mode byId(String id) {
+            for (Mode m : values()) {
+                if (m.id.equalsIgnoreCase(id)) return m;
+            }
+            return BIDIRECTIONAL;
+        }
+    }
+
+    enum OpConversion {
+        DEFAULT,
+        ADDITION_TO_MULTIPLY_BASE,
+        ADDITION_TO_MULTIPLY_TOTAL;
+
+        Text label() {
+            return Text.translatable(
+                "gui.attributification.mappings.op." + name()
+            );
+        }
+
+        static OpConversion byId(String id) {
+            for (OpConversion o : values()) {
+                if (o.name().equalsIgnoreCase(id)) return o;
+            }
+            return DEFAULT;
+        }
+    }
+
+    final List<String> sources = new ArrayList<>();
+    final List<String> targets = new ArrayList<>();
+    final List<String> exclude = new ArrayList<>();
+
+    double equivalence = 1.0;
+    double conversionEquivalence = 0.0;
+    double subtractValue = 0.0;
+    Mode mode = Mode.BIDIRECTIONAL;
+    OpConversion operationConversion = OpConversion.DEFAULT;
+
+    EditableMapping() {
+        sources.add("");
+        targets.add("");
+    }
+
+    Text summary() {
+        Text src = describe(sources);
+        Text dst = describe(targets);
+        return Text.empty()
+            .append(src)
+            .append(Text.literal(" \u2192 ").formatted(Formatting.DARK_GRAY))
+            .append(dst);
+    }
+
+    private static Text describe(List<String> values) {
+        List<String> filled = clean(values);
+        if (filled.isEmpty()) {
+            return Text.translatable(
+                "gui.attributification.mappings.unset"
+            ).formatted(Formatting.RED);
+        }
+        Text first = Text.literal(shortId(filled.get(0)));
+        if (filled.size() == 1) return first;
+        return first.copy()
+            .append(
+                Text.literal(" +" + (filled.size() - 1)).formatted(
+                    Formatting.GRAY
+                )
+            );
+    }
+
+    private static String shortId(String id) {
+        return id.startsWith("minecraft:") ? id.substring(10) : id;
+    }
+
+    boolean isComplete() {
+        return !clean(sources).isEmpty() && !clean(targets).isEmpty();
+    }
+
+    static List<String> clean(List<String> values) {
+        List<String> out = new ArrayList<>();
+        for (String v : values) {
+            if (v == null) continue;
+            String trimmed = v.trim();
+            if (!trimmed.isEmpty()) out.add(trimmed);
+        }
+        return out;
+    }
+
+    static String format(double value) {
+        if (value == Math.rint(value) && Math.abs(value) < 1.0E7) {
+            return String.format(java.util.Locale.ROOT, "%.1f", value);
+        }
+        return Double.toString(value);
+    }
+
+    static List<EditableMapping> parseFile(String json) {
+        List<EditableMapping> result = new ArrayList<>();
+        JsonObject root = GSON.fromJson(json, JsonObject.class);
+        if (root != null && root.get("mappings") instanceof JsonArray array) {
+            for (JsonElement element : array) {
+                if (element instanceof JsonObject obj) {
+                    result.add(parseEntry(obj));
+                }
+            }
+        }
+        if (result.isEmpty()) result.add(new EditableMapping());
+        return result;
+    }
+
+    private static EditableMapping parseEntry(JsonObject obj) {
+        EditableMapping m = new EditableMapping();
+        m.sources.clear();
+        m.targets.clear();
+
+        readIds(obj, "sources", "source", m.sources);
+        readIds(obj, "targets", "target", m.targets);
+        readArray(obj, "exclude", m.exclude);
+
+        if (m.sources.isEmpty()) m.sources.add("");
+        if (m.targets.isEmpty()) m.targets.add("");
+
+        m.equivalence = readDouble(obj, "equivalence", 1.0);
+        m.conversionEquivalence = readDouble(obj, "conversionEquivalence", 0.0);
+        m.subtractValue = readDouble(obj, "subtractValue", 0.0);
+        m.mode = Mode.byId(readString(obj, "mode", "bidirectional"));
+        m.operationConversion = OpConversion.byId(
+            readString(obj, "operationConversion", "DEFAULT")
+        );
+        return m;
+    }
+
+    private static void readIds(
+        JsonObject obj,
+        String arrayKey,
+        String singleKey,
+        List<String> out
+    ) {
+        readArray(obj, arrayKey, out);
+        String single = readString(obj, singleKey, "");
+        if (!single.isEmpty()) {
+            for (String part : single.split(",")) {
+                String trimmed = part.trim();
+                if (!trimmed.isEmpty()) out.add(trimmed);
+            }
+        }
+    }
+
+    private static void readArray(
+        JsonObject obj,
+        String key,
+        List<String> out
+    ) {
+        if (obj.get(key) instanceof JsonArray array) {
+            for (JsonElement element : array) {
+                if (element.isJsonPrimitive()) {
+                    String value = element.getAsString().trim();
+                    if (!value.isEmpty()) out.add(value);
+                }
+            }
+        }
+    }
+
+    private static String readString(JsonObject obj, String key, String def) {
+        JsonElement e = obj.get(key);
+        return e != null && e.isJsonPrimitive() ? e.getAsString() : def;
+    }
+
+    private static double readDouble(JsonObject obj, String key, double def) {
+        JsonElement e = obj.get(key);
+        if (e == null || !e.isJsonPrimitive()) return def;
+        try {
+            return e.getAsDouble();
+        } catch (NumberFormatException ignored) {
+            return def;
+        }
+    }
+
+    static String serializeFile(List<EditableMapping> entries) {
+        JsonArray array = new JsonArray();
+        for (EditableMapping m : entries) {
+            if (m.isComplete()) array.add(m.toJson());
+        }
+        JsonObject root = new JsonObject();
+        root.add("mappings", array);
+        return GSON.toJson(root);
+    }
+
+    private JsonObject toJson() {
+        JsonObject obj = new JsonObject();
+        writeIds(obj, "source", "sources", clean(sources));
+        writeIds(obj, "target", "targets", clean(targets));
+
+        List<String> cleanExclude = clean(exclude);
+        if (!cleanExclude.isEmpty()) {
+            JsonArray array = new JsonArray();
+            cleanExclude.forEach(array::add);
+            obj.add("exclude", array);
+        }
+
+        obj.addProperty("equivalence", equivalence);
+        obj.addProperty("conversionEquivalence", conversionEquivalence);
+        obj.addProperty("subtractValue", subtractValue);
+        obj.addProperty("mode", mode.id);
+        obj.addProperty("operationConversion", operationConversion.name());
+        return obj;
+    }
+
+    private static void writeIds(
+        JsonObject obj,
+        String singleKey,
+        String arrayKey,
+        List<String> values
+    ) {
+        if (values.size() == 1) {
+            obj.addProperty(singleKey, values.get(0));
+        } else {
+            JsonArray array = new JsonArray();
+            values.forEach(array::add);
+            obj.add(arrayKey, array);
+        }
+    }
+}

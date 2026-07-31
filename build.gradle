@@ -40,17 +40,12 @@ subprojects {
             name = "Modrinth"
             url = "https://api.modrinth.com/maven"
         }
-        maven {
-            name = "FzzyMaven"
-            url = "https://maven.fzzyhmstrs.me/"
-        }
     }
 
     dependencies {
         minecraft "net.minecraft:minecraft:$rootProject.minecraft_version"
         mappings "net.fabricmc:yarn:$rootProject.yarn_mappings:v2"
         
-        implementation 'org.spongepowered:mixin:0.8.5'
         annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
         compileOnly "curse.maven:accessories-938917:7164863"
         compileOnly "curse.maven:accessories-tc-layer-1005680:5780755"

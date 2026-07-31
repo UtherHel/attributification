@@ -1,0 +1,73 @@
+# Gradle
+.gradle/
+build/
+out/
+bin/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+
+# Eclipse
+*.launch
+.metadata/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Minecraft
+run/
+logs/
+crash-reports/
+
+# Build artifacts
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Local configuration
+local.properties
+
+# Archives
+*.7z
+*.zip
+*.tar.gz
+*.rar
+
+# Changelogs (development only)
+changelogs/
+
+# Project page templates (development only)
+project-page/
+
+# Vendored reference sources: decompiled Minecraft, other mods, and an older
+# copy of this mod (with its own .git). Local reading material only — several GB.
+deps/
+
+# Architectury Loom transformer scratch output
+.architectury-transformer/
+
+# Editor / assistant workspace dirs
+.zed/
+.claude/
+
+AGENTS.md
+
+# Windows artifact: `> nul` redirection in a POSIX shell creates a real file
+nul

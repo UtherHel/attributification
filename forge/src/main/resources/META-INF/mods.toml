@@ -33,9 +33,4 @@ versionRange = "[9.2.14,)"
 ordering = "AFTER"
 side = "BOTH"
 
-[[dependencies.attributification]]
-modId = "fzzy_config"
-mandatory = true
-versionRange = "[0.7.0,)"
-ordering = "AFTER"
-side = "BOTH"
+
