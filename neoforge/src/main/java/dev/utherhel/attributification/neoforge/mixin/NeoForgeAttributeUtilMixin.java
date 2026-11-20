@@ -79,13 +79,6 @@ public class NeoForgeAttributeUtilMixin {
                 RegistryEntry<EntityAttribute> targetAttr = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
                 if (targetAttr == null) continue;
 
-                if (mapping.isFullReplacement()) {
-                    // Hide source modifier entirely
-                    toRemove.add(entry);
-                    AttributificationLogger.info("[NeoForgeTooltip] Hiding modifier for fullReplacement: " + sourceId);
-                    continue;
-                }
-
                 if (mapping.isOnlyVisualChange()) {
                     // Show with target name but original value
                     toRemove.add(entry);

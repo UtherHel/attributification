@@ -5,6 +5,7 @@ import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
+import dev.utherhel.attributification.util.ModifierRedirect;
 import net.minecraft.entity.attribute.AttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
@@ -47,6 +48,7 @@ public class AttributeContainerMixin {
     private void redirectAttribute(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<EntityAttributeInstance> cir) {
         Boolean processing = isProcessing.get();
         if (Boolean.TRUE.equals(processing)) return;
+        ModifierRedirect.clear();
         
         isProcessing.set(true);
         try {
@@ -67,6 +69,8 @@ public class AttributeContainerMixin {
                 if (targetInstance != null) {
                     AttributificationLogger.info("[AttributeContainer] Redirected getCustomInstance: " + 
                         AttributeUtils.getAttributeId(attribute) + " -> " + AttributeUtils.getAttributeId(target));
+                    ModifierRedirect.set(targetInstance,
+                        Attributifaction.getAttributeUnifier().getMapping(AttributeUtils.getAttributeId(attribute)));
                     cir.setReturnValue(targetInstance);
                 }
             }

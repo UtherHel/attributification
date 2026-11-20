@@ -60,23 +60,12 @@ public final class AttributificationNeoForgeEvents {
                 );
             if (targetAttr == null) continue;
 
-            // fullReplacement: remove source modifier entirely (source attribute frozen)
-            if (mapping.isFullReplacement()) {
-                conversions.add(new Conversion(attribute, modifier.id(), true));
-                AttributificationLogger.info(
-                    "[ItemAttributeModifierEvent] Full replacement, removing modifier: " +
-                        sourceId
-                );
-                continue;
-            }
-
             // onlyVisualChange: swap attribute reference, keep value
             if (mapping.isOnlyVisualChange()) {
                 conversions.add(
                     new Conversion(
                         attribute,
                         modifier.id(),
-                        false,
                         targetAttr,
                         modifier,
                         slot
@@ -100,7 +89,6 @@ public final class AttributificationNeoForgeEvents {
                 new Conversion(
                     attribute,
                     modifier.id(),
-                    false,
                     targetAttr,
                     convertedModifier,
                     slot
@@ -121,13 +109,11 @@ public final class AttributificationNeoForgeEvents {
         // Apply conversions
         for (Conversion conv : conversions) {
             event.removeModifier(conv.sourceAttribute(), conv.modifierId());
-            if (!conv.removeOnly()) {
-                event.addModifier(
-                    conv.targetAttribute(),
-                    conv.convertedModifier(),
-                    conv.slot()
-                );
-            }
+            event.addModifier(
+                conv.targetAttribute(),
+                conv.convertedModifier(),
+                conv.slot()
+            );
         }
     }
 
@@ -170,17 +156,8 @@ public final class AttributificationNeoForgeEvents {
     private record Conversion(
         RegistryEntry<EntityAttribute> sourceAttribute,
         Identifier modifierId,
-        boolean removeOnly,
         RegistryEntry<EntityAttribute> targetAttribute,
         EntityAttributeModifier convertedModifier,
         AttributeModifierSlot slot
-    ) {
-        Conversion(
-            RegistryEntry<EntityAttribute> source,
-            Identifier modifierId,
-            boolean removeOnly
-        ) {
-            this(source, modifierId, removeOnly, null, null, null);
-        }
-    }
+    ) {}
 }

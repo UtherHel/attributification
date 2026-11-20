@@ -1,3 +1,12 @@
+### Unreleased
+- Mapping editor: the server accepts editor requests only from operators (permission level 2)
+- Fix: Full Replacement removed the source attribute's item modifiers instead of moving them to the
+  target, so neither attribute changed (#2)
+- Fix: item modifiers were converted twice (value divided by the conversion equivalence two times)
+- Fix: the target attribute's own modifiers were divided by the conversion equivalence as well; only
+  modifiers that reach the target through the source attribute are converted now
+- Removed unused modifier tracking that grew with every modifier added to a target attribute
+
 ### 2.1.0
 - Move attribute mappings to datapacks — reload with /reload, ship or override like any datapack
 - Replace Fzzy Config with platform-native config (Fabric: JSON, NeoForge: TOML)

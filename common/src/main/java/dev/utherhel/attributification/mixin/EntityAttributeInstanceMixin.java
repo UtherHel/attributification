@@ -1,29 +1,21 @@
 package dev.utherhel.attributification.mixin;
 
-import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
-import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
-import dev.utherhel.attributification.util.AttributeUtils;
-import net.minecraft.entity.attribute.EntityAttribute;
+import dev.utherhel.attributification.util.ModifierRedirect;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Converts modifier values and tracks Identifiers for cleanup
+ * Converts the values of modifiers redirected from a source attribute to its target
  */
 @Mixin(EntityAttributeInstance.class)
 public abstract class EntityAttributeInstanceMixin {
-    
-    @Shadow
-    private RegistryEntry<EntityAttribute> type;
     
     @Unique
     private static final ThreadLocal<Boolean> isProcessing = ThreadLocal.withInitial(() -> false);
@@ -37,7 +29,7 @@ public abstract class EntityAttributeInstanceMixin {
         
         isProcessing.set(true);
         try {
-            EntityAttributeModifier converted = convertAndTrack(modifier);
+            EntityAttributeModifier converted = convert(modifier);
             if (converted != null && converted != modifier) {
                 ci.cancel();
                 EntityAttributeInstance self = (EntityAttributeInstance) (Object) this;
@@ -57,7 +49,7 @@ public abstract class EntityAttributeInstanceMixin {
         
         isProcessing.set(true);
         try {
-            EntityAttributeModifier converted = convertAndTrack(modifier);
+            EntityAttributeModifier converted = convert(modifier);
             if (converted != null && converted != modifier) {
                 ci.cancel();
                 EntityAttributeInstance self = (EntityAttributeInstance) (Object) this;
@@ -69,25 +61,14 @@ public abstract class EntityAttributeInstanceMixin {
     }
     
     /**
-     * Converts modifier value and tracks UUID
+     * Converts a modifier that reached this (target) instance through a source attribute lookup.
+     * Item modifiers are converted when the item's modifiers are built and the target mod's own
+     * modifiers are already in target units, so neither is converted here.
      */
     @Unique
-    private EntityAttributeModifier convertAndTrack(EntityAttributeModifier modifier) {
-        AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
-        if (unifier == null) return null;
-        
-        String targetId = AttributeUtils.getAttributeId(this.type);
-        if (targetId == null || !unifier.isTargetAttribute(targetId)) return null;
-        
-        // Fast lookup using AttributeUnifier's reverse cache
-        AttributeMappingEntry mapping = unifier.getMappingByTarget(targetId);
+    private EntityAttributeModifier convert(EntityAttributeModifier modifier) {
+        AttributeMappingEntry mapping = ModifierRedirect.mappingFor((EntityAttributeInstance) (Object) this);
         if (mapping == null) return null;
-        
-        // Track UUID (always track, even if no conversion)
-        unifier.trackRedirectedModifier(mapping.getSourceAttribute(), targetId, modifier.id());
-        
-        AttributificationLogger.info("[EntityAttributeInstance] Tracking modifier " + modifier.id() + 
-            " for " + mapping.getSourceAttribute() + " -> " + targetId);
         
         // Skip conversion for special modes
         if (mapping.isOnlyVisualChange() || mapping.isFullReplacement()) {
