@@ -102,6 +102,9 @@ public final class AttributificationFabricPayloadHandler {
             RequestMappingFilesPayload.ID,
             (payload, context) -> {
                 context.server().execute(() -> {
+                    if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
+                        return;
+                    }
                     ServerPlayerEntity player = context.player();
                     MappingFilesListPayload response = buildFileList(
                         context.server(),
@@ -116,6 +119,9 @@ public final class AttributificationFabricPayloadHandler {
             RequestMappingFileContentPayload.ID,
             (payload, context) -> {
                 context.server().execute(() -> {
+                    if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
+                        return;
+                    }
                     ServerPlayerEntity player = context.player();
                     handleRequestFileContent(
                         player,
@@ -130,6 +136,9 @@ public final class AttributificationFabricPayloadHandler {
             SaveMappingFilePayload.ID,
             (payload, context) -> {
                 context.server().execute(() -> {
+                    if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
+                        return;
+                    }
                     handleSaveFile(context.server(), payload);
                 });
             }
@@ -139,6 +148,9 @@ public final class AttributificationFabricPayloadHandler {
             DeleteMappingFilePayload.ID,
             (payload, context) -> {
                 context.server().execute(() -> {
+                    if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
+                        return;
+                    }
                     handleDeleteFile(context.server(), payload);
                 });
             }
@@ -148,6 +160,9 @@ public final class AttributificationFabricPayloadHandler {
             RequestAttributesListPayload.ID,
             (payload, context) -> {
                 context.server().execute(() -> {
+                    if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
+                        return;
+                    }
                     ServerPlayerEntity player = context.player();
                     List<String> attrs =
                         net.minecraft.registry.Registries.ATTRIBUTE.getIds()
@@ -179,6 +194,9 @@ public final class AttributificationFabricPayloadHandler {
             ConvertLegacyMappingsPayload.ID,
             (payload, context) -> {
                 context.server().execute(() -> {
+                    if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
+                        return;
+                    }
                     ServerPlayerEntity player = context.player();
                     MinecraftServer server = context.server();
                     Path configDir =

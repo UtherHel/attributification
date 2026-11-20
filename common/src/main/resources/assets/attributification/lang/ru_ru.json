@@ -109,7 +109,6 @@
   "gui.attributification.mappings.mode.fullReplacement.desc": "Полная замена модификатора источника на целевой.",
   "gui.attributification.mappings.status.exists": "%s уже существует",
   "gui.attributification.mappings.convert_legacy": "Конв. %d уст.",
-  "gui.attributification.mappings.editor": "Редактор Маппингов",
   "gui.attributification.mappings.status.saved": "Сохранено %s",
   "gui.attributification.mappings.status.overridden": "%s сохранён в мир — теперь он переопределяет оригинал",
   "gui.attributification.mappings.status.deleted": "Удалено",
