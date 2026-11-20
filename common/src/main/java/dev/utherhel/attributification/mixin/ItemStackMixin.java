@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 /**
- * Shows target attribute in tooltip with converted values
+ * Converts source → target item modifiers (Fabric): tooltips and equipment
  */
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
@@ -62,6 +62,30 @@ public class ItemStackMixin {
                 isProcessing.remove();
             }
         };
+    }
+
+    /**
+     * Same conversion for equipment: entities apply item modifiers through
+     * applyAttributeModifiers(EquipmentSlot, ...), not the tooltip method above
+     */
+    @ModifyArg(
+        method = "applyAttributeModifiers",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/component/type/AttributeModifiersComponent;applyModifiers(Lnet/minecraft/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V"
+        ),
+        index = 1
+    )
+    private BiConsumer<
+        RegistryEntry<EntityAttribute>,
+        EntityAttributeModifier
+    > wrapConsumerForEquipment(
+        BiConsumer<
+            RegistryEntry<EntityAttribute>,
+            EntityAttributeModifier
+        > original
+    ) {
+        return wrapConsumerForTooltip(original);
     }
 
     /**
