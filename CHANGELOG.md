@@ -2,6 +2,7 @@
 - Mapping editor: the server accepts editor requests only from operators (permission level 2)
 - Fix: Full Replacement removed the source attribute's item modifiers instead of moving them to the
   target, so neither attribute changed (#2)
+- Fix (Fabric): equipment used the unconverted item modifiers; only tooltips were converted
 - Fix: item modifiers were converted twice (value divided by the conversion equivalence two times)
 - Fix: the target attribute's own modifiers were divided by the conversion equivalence as well; only
   modifiers that reach the target through the source attribute are converted now
