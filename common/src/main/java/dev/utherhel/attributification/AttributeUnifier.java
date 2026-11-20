@@ -4,11 +4,9 @@ import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.config.AttributificationConfig;
 import java.util.*;
 import java.util.regex.Pattern;
-import net.minecraft.util.Identifier;
 
 /**
  * Maps source → target with wildcard support and exclusion patterns.
- * Implements bidirectional caching for fast lookups.
  */
 public class AttributeUnifier {
 
@@ -20,27 +18,15 @@ public class AttributeUnifier {
     // Wildcard sources: list of (compiled pattern, entry) for dynamic matching
     private final List<WildcardEntry> wildcardSources;
 
-    // Reverse cache: target → mapping (for EntityAttributeInstanceMixin)
-    private final Map<String, AttributeMappingEntry> targetToMapping;
-
-    // Tracks modifier Identifiers: target → Set<Identifier>
-    private final Map<String, Set<Identifier>> redirectedModifiers =
-        new HashMap<>();
-
-    // Tracks source for each Identifier: Identifier → source
-    private final Map<Identifier, String> modifierSourceMap = new HashMap<>();
-
     public AttributeUnifier(AttributificationConfig config) {
         this.config = config;
         this.sourceToMapping = new HashMap<>();
-        this.targetToMapping = new HashMap<>();
         this.wildcardSources = new ArrayList<>();
         rebuildCache();
     }
 
     private void rebuildCache() {
         sourceToMapping.clear();
-        targetToMapping.clear();
         wildcardSources.clear();
 
         for (AttributeMappingEntry mapping : config.getMappings()) {
@@ -54,11 +40,6 @@ public class AttributeUnifier {
                     // Exact match — add to forward cache
                     sourceToMapping.put(pattern, mapping);
                 }
-            }
-
-            // Reverse: each target → mapping
-            for (String targetId : mapping.getTargetAttributes()) {
-                targetToMapping.put(targetId, mapping);
             }
         }
     }
@@ -98,79 +79,6 @@ public class AttributeUnifier {
             }
         }
         return null;
-    }
-
-    /**
-     * Get mapping for target attribute (reverse lookup).
-     */
-    public AttributeMappingEntry getMappingByTarget(String targetAttribute) {
-        return targetToMapping.get(targetAttribute);
-    }
-
-    /**
-     * Is this a target attribute?
-     */
-    public boolean isTargetAttribute(String attributeId) {
-        return targetToMapping.containsKey(attributeId);
-    }
-
-    // ── Modifier tracking ─────────────────────────────────────────
-
-    public synchronized void trackRedirectedModifier(
-        String sourceAttributeId,
-        String targetAttributeId,
-        Identifier modifierId
-    ) {
-        redirectedModifiers
-            .computeIfAbsent(targetAttributeId, k -> new HashSet<>())
-            .add(modifierId);
-        if (sourceAttributeId != null) {
-            modifierSourceMap.put(modifierId, sourceAttributeId);
-        }
-    }
-
-    public synchronized void untrackRedirectedModifier(
-        String targetAttributeId,
-        Identifier modifierId
-    ) {
-        Set<Identifier> ids = redirectedModifiers.get(targetAttributeId);
-        if (ids != null) {
-            ids.remove(modifierId);
-            if (ids.isEmpty()) {
-                redirectedModifiers.remove(targetAttributeId);
-            }
-        }
-        modifierSourceMap.remove(modifierId);
-    }
-
-    public synchronized Set<Identifier> getRedirectedModifiers(
-        String targetAttributeId
-    ) {
-        return new HashSet<>(
-            redirectedModifiers.getOrDefault(
-                targetAttributeId,
-                Collections.emptySet()
-            )
-        );
-    }
-
-    public synchronized Set<Identifier> getModifiersBySource(
-        String sourceAttributeId
-    ) {
-        Set<Identifier> result = new HashSet<>();
-        for (Map.Entry<
-            Identifier,
-            String
-        > entry : modifierSourceMap.entrySet()) {
-            if (entry.getValue().equals(sourceAttributeId)) {
-                result.add(entry.getKey());
-            }
-        }
-        return result;
-    }
-
-    public synchronized String getModifierSource(Identifier modifierId) {
-        return modifierSourceMap.get(modifierId);
     }
 
     public AttributificationConfig getConfig() {

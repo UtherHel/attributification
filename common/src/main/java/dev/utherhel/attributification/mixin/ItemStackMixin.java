@@ -123,13 +123,6 @@ public class ItemStackMixin {
             EntityAttributeModifier
         > consumer
     ) {
-        if (mapping.isFullReplacement()) {
-            AttributificationLogger.info(
-                "[ItemStack] Hiding modifier for fullReplacement: " + sourceId
-            );
-            return;
-        }
-
         if (mapping.isOnlyVisualChange()) {
             AttributificationLogger.info(
                 "[ItemStack] Visual change only: " +
