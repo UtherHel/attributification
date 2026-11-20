@@ -1,11 +1,12 @@
 package dev.utherhel.attributification;
 
+import dev.utherhel.attributification.config.LogLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Centralized logger for Attributification mod.
- * Provides consistent logging across all components.
+ * Centralized logger for Attributification mod. Messages are filtered by the configured
+ * {@code debug.logLevel} (info only with ALL), as on the 1.20.1 branch.
  */
 public final class AttributificationLogger {
 
@@ -17,19 +18,35 @@ public final class AttributificationLogger {
         // Private constructor to hide implicit public one
     }
 
+    private static LogLevel getLogLevel() {
+        try {
+            return Attributifaction.getConfig().getLogLevel();
+        } catch (Exception e) {
+            return LogLevel.WARNINGS;
+        }
+    }
+
     public static void info(String message) {
-        LOGGER.info(message);
+        if (getLogLevel().shouldLogInfo()) {
+            LOGGER.info(message);
+        }
     }
 
     public static void warn(String message) {
-        LOGGER.warn(message);
+        if (getLogLevel().shouldLogWarning()) {
+            LOGGER.warn(message);
+        }
     }
 
     public static void error(String message) {
-        LOGGER.error(message);
+        if (getLogLevel().shouldLogError()) {
+            LOGGER.error(message);
+        }
     }
 
     public static void error(String message, Throwable throwable) {
-        LOGGER.error(message, throwable);
+        if (getLogLevel().shouldLogError()) {
+            LOGGER.error(message, throwable);
+        }
     }
 }

@@ -5,6 +5,8 @@
 - Fix: item modifiers were converted twice (value divided by the conversion equivalence two times)
 - Fix: the target attribute's own modifiers were divided by the conversion equivalence as well; only
   modifiers that reach the target through the source attribute are converted now
+- Fix: `debug.logLevel` was ignored, so every redirected attribute lookup and read was logged at
+  INFO; info lines are written again only with `logLevel = ALL`
 - Removed unused modifier tracking that grew with every modifier added to a target attribute
 
 ### 2.1.0
