@@ -182,6 +182,10 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+                    || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
+                return;
+            }
             MinecraftServer server = context.player().getServer();
             if (server == null) return;
 
@@ -239,6 +243,10 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+                    || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
+                return;
+            }
             MinecraftServer server = context.player().getServer();
             if (server == null) return;
 
@@ -285,6 +293,10 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+                    || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
+                return;
+            }
             List<String> attrs =
                 net.minecraft.registry.Registries.ATTRIBUTE.getIds()
                     .stream()
@@ -311,6 +323,10 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+                    || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
+                return;
+            }
             String id = MappingFileNames.toValidId(payload.fileName());
             if (id == null) {
                 AttributificationLogger.warn(
@@ -391,6 +407,10 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+                    || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
+                return;
+            }
             MinecraftServer server = context.player().getServer();
             if (server == null) return;
 
@@ -459,6 +479,10 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
+            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+                    || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
+                return;
+            }
             MinecraftServer server = context.player().getServer();
             if (server == null) return;
 

@@ -109,7 +109,6 @@
   "gui.attributification.mappings.mode.fullReplacement.desc": "Replace the source modifier entirely with the target.",
   "gui.attributification.mappings.status.exists": "%s already exists",
   "gui.attributification.mappings.convert_legacy": "Convert %d legacy",
-  "gui.attributification.mappings.editor": "Mapping Editor",
   "gui.attributification.mappings.status.saved": "Saved %s",
   "gui.attributification.mappings.status.overridden": "Saved %s to this world — it now overrides the original",
   "gui.attributification.mappings.status.deleted": "Deleted",
