@@ -4,8 +4,8 @@ import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.core.Holder;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Uses AttributeUtils for shared caching
  * Source attribute always shows target's name
  */
-@Mixin(EntityAttribute.class)
+@Mixin(Attribute.class)
 public class AttributeMixin {
     
     @Unique
@@ -26,7 +26,7 @@ public class AttributeMixin {
     /**
      * Changes translation key: source → target name
      */
-    @Inject(method = "getTranslationKey", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getDescriptionId", at = @At("HEAD"), cancellable = true)
     private void changeTranslationKey(CallbackInfoReturnable<String> cir) {
         if (Boolean.TRUE.equals(isProcessing.get())) return;
         
@@ -35,7 +35,7 @@ public class AttributeMixin {
             AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
             if (unifier == null) return;
             
-            EntityAttribute self = (EntityAttribute) (Object) this;
+            Attribute self = (Attribute) (Object) this;
             String sourceId = AttributeUtils.getAttributeIdDirect(self);
             
             if (sourceId == null || !unifier.shouldUnify(sourceId)) return;
@@ -44,14 +44,14 @@ public class AttributeMixin {
             if (mapping == null) return;
             
             // Get target attribute using AttributeUtils
-            RegistryEntry<EntityAttribute> targetEntry = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            Holder<Attribute> targetEntry = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
             if (targetEntry == null) return;
             
-            EntityAttribute target = AttributeUtils.getValue(targetEntry);
+            Attribute target = AttributeUtils.getValue(targetEntry);
             if (target == null || target == self) return;
             
             // Return target's translation key
-            cir.setReturnValue(target.getTranslationKey());
+            cir.setReturnValue(target.getDescriptionId());
         } finally {
             isProcessing.remove();
         }

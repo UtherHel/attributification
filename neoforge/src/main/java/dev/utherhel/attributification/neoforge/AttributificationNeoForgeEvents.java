@@ -7,12 +7,12 @@ import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.component.type.AttributeModifierSlot;
-import net.minecraft.component.type.AttributeModifiersComponent;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
 
@@ -43,10 +43,10 @@ public final class AttributificationNeoForgeEvents {
         // Collect conversions to apply after iteration
         List<Conversion> conversions = new ArrayList<>();
 
-        for (AttributeModifiersComponent.Entry entry : modifiers) {
-            RegistryEntry<EntityAttribute> attribute = entry.attribute();
-            EntityAttributeModifier modifier = entry.modifier();
-            AttributeModifierSlot slot = entry.slot();
+        for (ItemAttributeModifiers.Entry entry : modifiers) {
+            Holder<Attribute> attribute = entry.attribute();
+            AttributeModifier modifier = entry.modifier();
+            EquipmentSlotGroup slot = entry.slot();
 
             String sourceId = AttributeUtils.getAttributeId(attribute);
             if (sourceId == null || !unifier.shouldUnify(sourceId)) continue;
@@ -54,7 +54,7 @@ public final class AttributificationNeoForgeEvents {
             AttributeMappingEntry mapping = unifier.getMapping(sourceId);
             if (mapping == null) continue;
 
-            RegistryEntry<EntityAttribute> targetAttr =
+            Holder<Attribute> targetAttr =
                 AttributeUtils.getFirstAvailableAttribute(
                     mapping.getTargetAttributes()
                 );
@@ -81,7 +81,7 @@ public final class AttributificationNeoForgeEvents {
             }
 
             // Convert modifier value and operation
-            EntityAttributeModifier convertedModifier = convertModifier(
+            AttributeModifier convertedModifier = convertModifier(
                 modifier,
                 mapping
             );
@@ -100,9 +100,9 @@ public final class AttributificationNeoForgeEvents {
                     " -> " +
                     AttributeUtils.getAttributeId(targetAttr) +
                     ", value: " +
-                    modifier.value() +
+                    modifier.amount() +
                     " -> " +
-                    convertedModifier.value()
+                    convertedModifier.amount()
             );
         }
 
@@ -120,26 +120,26 @@ public final class AttributificationNeoForgeEvents {
     /**
      * Converts a modifier value and operation according to mapping settings.
      */
-    private static EntityAttributeModifier convertModifier(
-        EntityAttributeModifier modifier,
+    private static AttributeModifier convertModifier(
+        AttributeModifier modifier,
         AttributeMappingEntry mapping
     ) {
-        EntityAttributeModifier.Operation op = modifier.operation();
-        double value = modifier.value();
+        AttributeModifier.Operation op = modifier.operation();
+        double value = modifier.amount();
 
         // Convert value (only for ADD_VALUE)
-        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
+        if (op == AttributeModifier.Operation.ADD_VALUE) {
             value = value / mapping.getConversionEquivalence();
         }
 
         // Convert operation
-        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
+        if (op == AttributeModifier.Operation.ADD_VALUE) {
             switch (mapping.getOperationConversionType()) {
                 case ADDITION_TO_MULTIPLY_BASE:
-                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+                    op = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
                     break;
                 case ADDITION_TO_MULTIPLY_TOTAL:
-                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                    op = AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
                     break;
                 case DEFAULT:
                 default:
@@ -147,17 +147,17 @@ public final class AttributificationNeoForgeEvents {
             }
         }
 
-        return new EntityAttributeModifier(modifier.id(), value, op);
+        return new AttributeModifier(modifier.id(), value, op);
     }
 
     /**
      * Internal record for queued modifier conversions.
      */
     private record Conversion(
-        RegistryEntry<EntityAttribute> sourceAttribute,
-        Identifier modifierId,
-        RegistryEntry<EntityAttribute> targetAttribute,
-        EntityAttributeModifier convertedModifier,
-        AttributeModifierSlot slot
+        Holder<Attribute> sourceAttribute,
+        ResourceLocation modifierId,
+        Holder<Attribute> targetAttribute,
+        AttributeModifier convertedModifier,
+        EquipmentSlotGroup slot
     ) {}
 }

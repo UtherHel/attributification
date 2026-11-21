@@ -10,9 +10,9 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 /**
  * Loads optional base config from datapack resources at path
@@ -48,7 +48,7 @@ public final class DatapackConfigLoader {
         logLevelOverride = null;
 
         // Find all config.json files in datapacks
-        Map<Identifier, Resource> resources = resourceManager.findResources(
+        Map<ResourceLocation, Resource> resources = resourceManager.listResources(
             "attributification",
             id -> id.getPath().equals("attributification/config.json")
         );
@@ -61,11 +61,11 @@ public final class DatapackConfigLoader {
         }
 
         // Use the first config found (highest priority datapack wins)
-        for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
-            Identifier id = entry.getKey();
+        for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
+            ResourceLocation id = entry.getKey();
             try (
                 Reader reader = new java.io.InputStreamReader(
-                    entry.getValue().getInputStream(),
+                    entry.getValue().open(),
                     java.nio.charset.StandardCharsets.UTF_8
                 )
             ) {

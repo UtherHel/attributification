@@ -1,10 +1,10 @@
 package dev.utherhel.attributification.gui.network;
 
 import dev.utherhel.attributification.Attributifaction;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Client → Server: sends an edited mapping file to be saved.
@@ -12,28 +12,28 @@ import net.minecraft.util.Identifier;
  * @param fileName    the file name to save as
  * @param jsonContent the entire JSON content to write
  */
-public record SaveMappingFilePayload(String fileName, String jsonContent) implements CustomPayload {
+public record SaveMappingFilePayload(String fileName, String jsonContent) implements CustomPacketPayload {
 
-    public static final Id<SaveMappingFilePayload> ID = new Id<>(
-        Identifier.of(Attributifaction.MOD_ID, "save_mapping_file")
+    public static final Type<SaveMappingFilePayload> ID = new Type<>(
+        ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "save_mapping_file")
     );
 
-    public static final PacketCodec<PacketByteBuf, SaveMappingFilePayload> CODEC =
-        new PacketCodec<>() {
+    public static final StreamCodec<FriendlyByteBuf, SaveMappingFilePayload> CODEC =
+        new StreamCodec<>() {
             @Override
-            public SaveMappingFilePayload decode(PacketByteBuf buf) {
-                return new SaveMappingFilePayload(buf.readString(), buf.readString());
+            public SaveMappingFilePayload decode(FriendlyByteBuf buf) {
+                return new SaveMappingFilePayload(buf.readUtf(), buf.readUtf());
             }
 
             @Override
-            public void encode(PacketByteBuf buf, SaveMappingFilePayload payload) {
-                buf.writeString(payload.fileName);
-                buf.writeString(payload.jsonContent);
+            public void encode(FriendlyByteBuf buf, SaveMappingFilePayload payload) {
+                buf.writeUtf(payload.fileName);
+                buf.writeUtf(payload.jsonContent);
             }
         };
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

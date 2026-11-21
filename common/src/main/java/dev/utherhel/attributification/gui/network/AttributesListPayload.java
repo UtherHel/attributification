@@ -3,10 +3,10 @@ package dev.utherhel.attributification.gui.network;
 import dev.utherhel.attributification.Attributifaction;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Server → Client: the list of all registered attribute IDs.
@@ -14,35 +14,35 @@ import net.minecraft.util.Identifier;
  *
  * @param attributes list of attribute string IDs (e.g., "minecraft:generic.attack_damage")
  */
-public record AttributesListPayload(List<String> attributes) implements CustomPayload {
+public record AttributesListPayload(List<String> attributes) implements CustomPacketPayload {
 
-    public static final Id<AttributesListPayload> ID = new Id<>(
-        Identifier.of(Attributifaction.MOD_ID, "attributes_list")
+    public static final Type<AttributesListPayload> ID = new Type<>(
+        ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "attributes_list")
     );
 
-    public static final PacketCodec<PacketByteBuf, AttributesListPayload> CODEC =
-        new PacketCodec<>() {
+    public static final StreamCodec<FriendlyByteBuf, AttributesListPayload> CODEC =
+        new StreamCodec<>() {
             @Override
-            public AttributesListPayload decode(PacketByteBuf buf) {
+            public AttributesListPayload decode(FriendlyByteBuf buf) {
                 int size = buf.readVarInt();
                 List<String> attrs = new ArrayList<>(size);
                 for (int i = 0; i < size; i++) {
-                    attrs.add(buf.readString());
+                    attrs.add(buf.readUtf());
                 }
                 return new AttributesListPayload(attrs);
             }
 
             @Override
-            public void encode(PacketByteBuf buf, AttributesListPayload payload) {
+            public void encode(FriendlyByteBuf buf, AttributesListPayload payload) {
                 buf.writeVarInt(payload.attributes.size());
                 for (String attr : payload.attributes) {
-                    buf.writeString(attr);
+                    buf.writeUtf(attr);
                 }
             }
         };
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

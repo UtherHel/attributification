@@ -14,10 +14,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.minecraft.registry.Registries;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 /**
  * Loads attribute mappings from datapack JSON files.
@@ -55,7 +55,7 @@ public final class MappingLoader {
         // Also load datapack config first
         DatapackConfigLoader.load(resourceManager);
 
-        Map<Identifier, Resource> resources = resourceManager.findResources(
+        Map<ResourceLocation, Resource> resources = resourceManager.listResources(
             DIRECTORY,
             id -> id.getPath().endsWith(".json")
         );
@@ -64,13 +64,13 @@ public final class MappingLoader {
 
         // Sorted so that when two datapacks define the same source, which one
         // wins is deterministic instead of depending on map iteration order.
-        List<Identifier> fileIds = new ArrayList<>(resources.keySet());
-        fileIds.sort(Identifier::compareTo);
+        List<ResourceLocation> fileIds = new ArrayList<>(resources.keySet());
+        fileIds.sort(ResourceLocation::compareTo);
 
-        for (Identifier fileId : fileIds) {
+        for (ResourceLocation fileId : fileIds) {
             try (
                 Reader reader = new InputStreamReader(
-                    resources.get(fileId).getInputStream(),
+                    resources.get(fileId).open(),
                     StandardCharsets.UTF_8
                 )
             ) {
@@ -130,7 +130,7 @@ public final class MappingLoader {
     private static List<String> registeredAttributeIds() {
         List<String> ids = new ArrayList<>();
         try {
-            for (Identifier id : Registries.ATTRIBUTE.getIds()) {
+            for (ResourceLocation id : BuiltInRegistries.ATTRIBUTE.keySet()) {
                 ids.add(id.toString());
             }
         } catch (Exception e) {
@@ -148,7 +148,7 @@ public final class MappingLoader {
      */
     private static CompiledMapping parseMapping(
         JsonObject obj,
-        Identifier fileId
+        ResourceLocation fileId
     ) {
         try {
             // ── Sources ──────────────────────────────────────────────────

@@ -6,10 +6,6 @@ import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import dev.utherhel.attributification.util.ModifierRedirect;
-import net.minecraft.entity.attribute.AttributeContainer;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
-import net.minecraft.registry.entry.RegistryEntry;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -18,11 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.HashMap;
 import java.util.Map;
+import net.minecraft.core.Holder;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeMap;
 
 /**
  * Redirects source → target with caching
  */
-@Mixin(AttributeContainer.class)
+@Mixin(AttributeMap.class)
 public class AttributeContainerMixin {
     
     @Unique
@@ -30,7 +30,7 @@ public class AttributeContainerMixin {
     
     // Cache: source -> target (or source if no mapping)
     @Unique
-    private static final Map<RegistryEntry<EntityAttribute>, RegistryEntry<EntityAttribute>> lookupCache = new HashMap<>();
+    private static final Map<Holder<Attribute>, Holder<Attribute>> lookupCache = new HashMap<>();
     
     // Register cache clear callback on class load
     static {
@@ -44,17 +44,17 @@ public class AttributeContainerMixin {
     /**
      * getAttribute(source) → getAttribute(target)
      */
-    @Inject(method = "getCustomInstance", at = @At("HEAD"), cancellable = true)
-    private void redirectAttribute(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<EntityAttributeInstance> cir) {
+    @Inject(method = "getInstance", at = @At("HEAD"), cancellable = true)
+    private void redirectAttribute(Holder<Attribute> attribute, CallbackInfoReturnable<AttributeInstance> cir) {
         Boolean processing = isProcessing.get();
         if (Boolean.TRUE.equals(processing)) return;
         ModifierRedirect.clear();
         
         isProcessing.set(true);
         try {
-            RegistryEntry<EntityAttribute> target = getTargetAttribute(attribute);
+            Holder<Attribute> target = getTargetAttribute(attribute);
             if (target != null && target != attribute) {
-                AttributeContainer self = (AttributeContainer) (Object) this;
+                AttributeMap self = (AttributeMap) (Object) this;
                 
                 // CRITICAL: Check if entity actually has the target attribute
                 if (!self.hasAttribute(target)) {
@@ -65,7 +65,7 @@ public class AttributeContainerMixin {
                     return;
                 }
                 
-                EntityAttributeInstance targetInstance = self.getCustomInstance(target);
+                AttributeInstance targetInstance = self.getInstance(target);
                 if (targetInstance != null) {
                     AttributificationLogger.info("[AttributeContainer] Redirected getCustomInstance: " + 
                         AttributeUtils.getAttributeId(attribute) + " -> " + AttributeUtils.getAttributeId(target));
@@ -83,14 +83,14 @@ public class AttributeContainerMixin {
      * hasAttribute(source) → hasAttribute(target)
      */
     @Inject(method = "hasAttribute", at = @At("HEAD"), cancellable = true)
-    private void redirectHasAttribute(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<Boolean> cir) {
+    private void redirectHasAttribute(Holder<Attribute> attribute, CallbackInfoReturnable<Boolean> cir) {
         if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
         try {
-            RegistryEntry<EntityAttribute> target = getTargetAttribute(attribute);
+            Holder<Attribute> target = getTargetAttribute(attribute);
             if (target != null && target != attribute) {
-                AttributeContainer self = (AttributeContainer) (Object) this;
+                AttributeMap self = (AttributeMap) (Object) this;
                 cir.setReturnValue(self.hasAttribute(target));
             }
         } finally {
@@ -102,7 +102,7 @@ public class AttributeContainerMixin {
      * getValue(source) → getValue(target) × equivalence (if bidirectional)
      */
     @Inject(method = "getValue", at = @At("HEAD"), cancellable = true)
-    private void redirectGetValue(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<Double> cir) {
+    private void redirectGetValue(Holder<Attribute> attribute, CallbackInfoReturnable<Double> cir) {
         if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
@@ -116,7 +116,7 @@ public class AttributeContainerMixin {
             AttributeMappingEntry mapping = unifier.getMapping(sourceId);
             if (mapping == null) return;
             
-            AttributeContainer self = (AttributeContainer) (Object) this;
+            AttributeMap self = (AttributeMap) (Object) this;
             
             // onlyVisualChange: return source value (no redirection)
             if (mapping.isOnlyVisualChange()) {
@@ -133,7 +133,7 @@ public class AttributeContainerMixin {
                 return;
             }
             
-            RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            Holder<Attribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
             if (target == null || target == attribute) return;
             
             // CRITICAL: Check if entity actually has the target attribute before trying to access it
@@ -169,7 +169,7 @@ public class AttributeContainerMixin {
      * getBaseValue(source) → getBaseValue(target) × equivalence (if bidirectional)
      */
     @Inject(method = "getBaseValue", at = @At("HEAD"), cancellable = true)
-    private void redirectGetBaseValue(RegistryEntry<EntityAttribute> attribute, CallbackInfoReturnable<Double> cir) {
+    private void redirectGetBaseValue(Holder<Attribute> attribute, CallbackInfoReturnable<Double> cir) {
         if (Boolean.TRUE.equals(isProcessing.get())) return;
         
         isProcessing.set(true);
@@ -195,10 +195,10 @@ public class AttributeContainerMixin {
                 return;
             }
             
-            RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+            Holder<Attribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
             if (target == null || target == attribute) return;
             
-            AttributeContainer self = (AttributeContainer) (Object) this;
+            AttributeMap self = (AttributeMap) (Object) this;
             
             // CRITICAL: Check if entity actually has the target attribute before trying to access it
             if (!self.hasAttribute(target)) {
@@ -229,9 +229,9 @@ public class AttributeContainerMixin {
      * Gets target attribute with caching
      */
     @Unique
-    private RegistryEntry<EntityAttribute> getTargetAttribute(RegistryEntry<EntityAttribute> attribute) {
+    private Holder<Attribute> getTargetAttribute(Holder<Attribute> attribute) {
         // Check static lookup cache first
-        RegistryEntry<EntityAttribute> cachedResult = lookupCache.get(attribute);
+        Holder<Attribute> cachedResult = lookupCache.get(attribute);
         if (cachedResult != null) {
             return cachedResult;
         }
@@ -274,7 +274,7 @@ public class AttributeContainerMixin {
         }
         
         // Normal bidirectional mode: redirect to target
-        RegistryEntry<EntityAttribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+        Holder<Attribute> target = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
         if (target != null && target != attribute) {
             lookupCache.put(attribute, target);
             return target;

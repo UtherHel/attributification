@@ -6,21 +6,21 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.ConfirmScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.ConfirmScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 
 /**
  * Root screen of the mappings GUI: browses the mapping datapack files that the
@@ -86,7 +86,7 @@ public class MappingsScreen extends Screen {
     // ── Static delivery (called from the loader payload handlers) ─────────
 
     public static void deliverOpen() {
-        MinecraftClient.getInstance().setScreen(new MappingsScreen());
+        Minecraft.getInstance().setScreen(new MappingsScreen());
     }
 
     public static void deliverFilesList(List<MappingFileEntry> files) {
@@ -111,7 +111,7 @@ public class MappingsScreen extends Screen {
             screen.refreshButtons();
             if (count > 0) {
                 screen.setStatus(
-                    Text.translatable(
+                    Component.translatable(
                         "gui.attributification.mappings.status.legacy_found",
                         count
                     )
@@ -121,63 +121,63 @@ public class MappingsScreen extends Screen {
     }
 
     private static Screen current() {
-        return MinecraftClient.getInstance().currentScreen;
+        return Minecraft.getInstance().screen;
     }
 
     // ── Instance state ────────────────────────────────────────────────────
 
-    private final ThreePartsLayoutWidget layout = new ThreePartsLayoutWidget(
+    private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(
         this,
         33,
         60
     );
 
     private FileListWidget fileList;
-    private TextFieldWidget newFileField;
-    private ButtonWidget createButton, editButton, deleteButton, convertButton;
+    private EditBox newFileField;
+    private Button createButton, editButton, deleteButton, convertButton;
 
     private List<MappingFileEntry> files = List.of();
-    private Text status = Text.empty();
+    private Component status = Component.empty();
     private int statusTimer;
 
     public MappingsScreen() {
-        super(Text.translatable("gui.attributification.mappings.title"));
+        super(Component.translatable("gui.attributification.mappings.title"));
     }
 
     // ── Init ──────────────────────────────────────────────────────────────
 
     @Override
     protected void init() {
-        layout.addHeader(title, textRenderer);
+        layout.addTitleHeader(title, font);
 
-        fileList = layout.addBody(new FileListWidget());
+        fileList = layout.addToContents(new FileListWidget());
 
         // Footer row 1: new-file name field + Create.
-        DirectionalLayoutWidget top = DirectionalLayoutWidget.horizontal()
+        LinearLayout top = LinearLayout.horizontal()
             .spacing(8);
-        newFileField = new TextFieldWidget(
-            textRenderer,
+        newFileField = new EditBox(
+            font,
             0,
             0,
             168,
             20,
-            Text.translatable("gui.attributification.mappings.file_name")
+            Component.translatable("gui.attributification.mappings.file_name")
         );
         newFileField.setMaxLength(MappingFileNames.MAX_NAME_LENGTH);
-        newFileField.setPlaceholder(
-            Text.translatable(
+        newFileField.setHint(
+            Component.translatable(
                 "gui.attributification.mappings.file_name_hint"
-            ).formatted(Formatting.DARK_GRAY)
+            ).withStyle(ChatFormatting.DARK_GRAY)
         );
         // Latin letters, digits, '_' and '-' only: Minecraft rejects anything
         // else in a datapack path, which would break the whole pack.
-        newFileField.setTextPredicate(MappingFileNames::isTypeable);
-        newFileField.setChangedListener(value -> refreshButtons());
-        top.add(newFileField);
+        newFileField.setFilter(MappingFileNames::isTypeable);
+        newFileField.setResponder(value -> refreshButtons());
+        top.addChild(newFileField);
 
-        createButton = top.add(
-            ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.new_file"),
+        createButton = top.addChild(
+            Button.builder(
+                Component.translatable("gui.attributification.mappings.new_file"),
                 b -> createFile()
             )
                 .width(80)
@@ -185,30 +185,30 @@ public class MappingsScreen extends Screen {
         );
 
         // Footer row 2: actions on the selected file.
-        DirectionalLayoutWidget bottom = DirectionalLayoutWidget.horizontal()
+        LinearLayout bottom = LinearLayout.horizontal()
             .spacing(8);
 
-        editButton = bottom.add(
-            ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.edit"),
+        editButton = bottom.addChild(
+            Button.builder(
+                Component.translatable("gui.attributification.mappings.edit"),
                 b -> openSelected()
             )
                 .width(74)
                 .build()
         );
 
-        deleteButton = bottom.add(
-            ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.delete"),
+        deleteButton = bottom.addChild(
+            Button.builder(
+                Component.translatable("gui.attributification.mappings.delete"),
                 b -> confirmDelete()
             )
                 .width(74)
                 .build()
         );
 
-        convertButton = bottom.add(
-            ButtonWidget.builder(
-                Text.translatable(
+        convertButton = bottom.addChild(
+            Button.builder(
+                Component.translatable(
                     "gui.attributification.mappings.convert_legacy",
                     legacyMappingsCount
                 ),
@@ -218,26 +218,26 @@ public class MappingsScreen extends Screen {
                 .build()
         );
 
-        bottom.add(
-            ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.refresh"),
+        bottom.addChild(
+            Button.builder(
+                Component.translatable("gui.attributification.mappings.refresh"),
                 b -> callbacks.requestFiles()
             )
                 .width(64)
                 .build()
         );
 
-        bottom.add(
-            ButtonWidget.builder(ScreenTexts.DONE, b -> close()).width(58).build()
+        bottom.addChild(
+            Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(58).build()
         );
 
-        DirectionalLayoutWidget footer = layout.addFooter(
-            DirectionalLayoutWidget.vertical().spacing(6)
+        LinearLayout footer = layout.addToFooter(
+            LinearLayout.vertical().spacing(6)
         );
-        footer.add(top);
-        footer.add(bottom);
+        footer.addChild(top);
+        footer.addChild(bottom);
 
-        layout.forEachChild(this::addDrawableChild);
+        layout.visitWidgets(this::addRenderableWidget);
         refreshPositions();
         refreshButtons();
 
@@ -246,13 +246,13 @@ public class MappingsScreen extends Screen {
     }
 
     @Override
-    protected void initTabNavigation() {
+    protected void repositionElements() {
         refreshPositions();
     }
 
     private void refreshPositions() {
-        layout.refreshPositions();
-        fileList.position(width, layout);
+        layout.arrangeElements();
+        fileList.updateSize(width, layout);
     }
 
     /** Keeps button enablement in sync with the current selection. */
@@ -260,13 +260,13 @@ public class MappingsScreen extends Screen {
         MappingFileEntry selected = selectedFile();
         editButton.active = selected != null;
         deleteButton.active = selected != null && selected.editable();
-        createButton.active = !newFileField.getText().isBlank();
+        createButton.active = !newFileField.getValue().isBlank();
 
         // A read-only file cannot be edited in place, but it can be overridden
         // by a copy in the world datapack — so the button offers that instead.
         boolean override = selected != null && !selected.editable();
         editButton.setMessage(
-            Text.translatable(
+            Component.translatable(
                 override
                     ? "gui.attributification.mappings.override"
                     : "gui.attributification.mappings.edit"
@@ -274,8 +274,8 @@ public class MappingsScreen extends Screen {
         );
         editButton.setTooltip(
             override
-                ? Tooltip.of(
-                    Text.translatable(
+                ? Tooltip.create(
+                    Component.translatable(
                         "gui.attributification.mappings.override_tooltip"
                     )
                 )
@@ -286,7 +286,7 @@ public class MappingsScreen extends Screen {
         convertButton.visible = hasLegacy;
         convertButton.active = hasLegacy;
         convertButton.setMessage(
-            Text.translatable(
+            Component.translatable(
                 "gui.attributification.mappings.convert_legacy",
                 legacyMappingsCount
             )
@@ -294,8 +294,8 @@ public class MappingsScreen extends Screen {
 
         if (override) {
             deleteButton.setTooltip(
-                Tooltip.of(
-                    Text.translatable(
+                Tooltip.create(
+                    Component.translatable(
                         "gui.attributification.mappings.read_only_tooltip"
                     )
                 )
@@ -306,7 +306,7 @@ public class MappingsScreen extends Screen {
     }
 
     private MappingFileEntry selectedFile() {
-        FileEntry entry = fileList == null ? null : fileList.getSelectedOrNull();
+        FileEntry entry = fileList == null ? null : fileList.getSelected();
         return entry == null ? null : entry.file;
     }
 
@@ -314,13 +314,13 @@ public class MappingsScreen extends Screen {
 
     private void createFile() {
         String fileName = MappingFileNames.normalizeTypedName(
-            newFileField.getText()
+            newFileField.getValue()
         );
         if (fileName == null) {
             setStatus(
-                Text.translatable(
+                Component.translatable(
                     "gui.attributification.mappings.status.invalid_name"
-                ).formatted(Formatting.RED)
+                ).withStyle(ChatFormatting.RED)
             );
             return;
         }
@@ -328,18 +328,18 @@ public class MappingsScreen extends Screen {
         for (MappingFileEntry file : files) {
             if (file.fileName().equalsIgnoreCase(id)) {
                 setStatus(
-                    Text.translatable(
+                    Component.translatable(
                         "gui.attributification.mappings.status.exists",
                         fileName
-                    ).formatted(Formatting.RED)
+                    ).withStyle(ChatFormatting.RED)
                 );
                 return;
             }
         }
-        newFileField.setText("");
+        newFileField.setValue("");
         List<EditableMapping> entries = new ArrayList<>();
         entries.add(new EditableMapping());
-        client.setScreen(
+        minecraft.setScreen(
             new MappingEditorScreen(this, id, entries, EditorMode.EDIT)
         );
     }
@@ -347,7 +347,7 @@ public class MappingsScreen extends Screen {
     private void openSelected() {
         MappingFileEntry file = selectedFile();
         if (file == null) return;
-        setStatus(Text.translatable("gui.attributification.mappings.loading"));
+        setStatus(Component.translatable("gui.attributification.mappings.loading"));
         callbacks.requestFileContent(file.fileName());
         requestAttributesIfMissing();
     }
@@ -355,24 +355,24 @@ public class MappingsScreen extends Screen {
     private void confirmDelete() {
         MappingFileEntry file = selectedFile();
         if (file == null || !file.editable()) return;
-        client.setScreen(
+        minecraft.setScreen(
             new ConfirmScreen(
                 confirmed -> {
                     if (confirmed) {
                         callbacks.deleteFile(file.fileName());
                         setStatus(
-                            Text.translatable(
+                            Component.translatable(
                                 "gui.attributification.mappings.status.deleted"
                             )
                         );
                         callbacks.requestFiles();
                     }
-                    client.setScreen(this);
+                    minecraft.setScreen(this);
                 },
-                Text.translatable(
+                Component.translatable(
                     "gui.attributification.mappings.confirm_delete"
                 ),
-                Text.literal(file.fileName())
+                Component.literal(file.fileName())
             )
         );
     }
@@ -407,14 +407,14 @@ public class MappingsScreen extends Screen {
             entries = EditableMapping.parseFile(json);
         } catch (Exception e) {
             setStatus(
-                Text.translatable(
+                Component.translatable(
                     "gui.attributification.mappings.status.parse_error",
                     String.valueOf(e.getMessage())
-                ).formatted(Formatting.RED)
+                ).withStyle(ChatFormatting.RED)
             );
             return;
         }
-        client.setScreen(
+        minecraft.setScreen(
             new MappingEditorScreen(this, fileName, entries, mode)
         );
     }
@@ -422,17 +422,17 @@ public class MappingsScreen extends Screen {
     /** Called by the editor after a successful save. */
     void onSaved(String fileName, EditorMode mode) {
         setStatus(
-            Text.translatable(
+            Component.translatable(
                 mode.isOverride()
                     ? "gui.attributification.mappings.status.overridden"
                     : "gui.attributification.mappings.status.saved",
                 fileName
-            ).formatted(Formatting.GREEN)
+            ).withStyle(ChatFormatting.GREEN)
         );
         callbacks.requestFiles();
     }
 
-    void setStatus(Text text) {
+    void setStatus(Component text) {
         this.status = text;
         this.statusTimer = 160;
     }
@@ -440,22 +440,22 @@ public class MappingsScreen extends Screen {
     // ── Render ────────────────────────────────────────────────────────────
 
     @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
         if (files.isEmpty()) {
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                Text.translatable("gui.attributification.mappings.no_files"),
+            context.drawCenteredString(
+                font,
+                Component.translatable("gui.attributification.mappings.no_files"),
                 width / 2,
                 layout.getHeaderHeight() + 24,
                 0xFFA0A0A0
             );
         }
 
-        if (statusTimer > 0 && status != Text.empty()) {
-            context.drawCenteredTextWithShadow(
-                textRenderer,
+        if (statusTimer > 0 && status != Component.empty()) {
+            context.drawCenteredString(
+                font,
                 status,
                 width / 2,
                 layout.getHeaderHeight() - 14,
@@ -471,18 +471,18 @@ public class MappingsScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     // ── File list ─────────────────────────────────────────────────────────
 
     private class FileListWidget
-        extends AlwaysSelectedEntryListWidget<FileEntry> {
+        extends ObjectSelectionList<FileEntry> {
 
         FileListWidget() {
             super(
-                MinecraftClient.getInstance(),
+                Minecraft.getInstance(),
                 MappingsScreen.this.width,
                 MappingsScreen.this.layout.getContentHeight(),
                 MappingsScreen.this.layout.getHeaderHeight(),
@@ -511,7 +511,7 @@ public class MappingsScreen extends Screen {
         }
     }
 
-    private class FileEntry extends AlwaysSelectedEntryListWidget.Entry<FileEntry> {
+    private class FileEntry extends ObjectSelectionList.Entry<FileEntry> {
 
         private final MappingFileEntry file;
         private long lastClickTime;
@@ -521,13 +521,13 @@ public class MappingsScreen extends Screen {
         }
 
         @Override
-        public Text getNarration() {
-            return Text.literal(file.fileName());
+        public Component getNarration() {
+            return Component.literal(file.fileName());
         }
 
         @Override
         public void render(
-            DrawContext context,
+            GuiGraphics context,
             int index,
             int y,
             int x,
@@ -538,15 +538,15 @@ public class MappingsScreen extends Screen {
             boolean hovered,
             float tickDelta
         ) {
-            var textRenderer = MappingsScreen.this.textRenderer;
+            var textRenderer = MappingsScreen.this.font;
             int textY = y + (entryHeight - 9) / 2;
 
             // Right-hand badge first, so the name can be clipped against it.
-            Text badge = file.editable()
-                ? Text.translatable("gui.attributification.mappings.world")
-                : Text.translatable("gui.attributification.mappings.read_only");
-            int badgeWidth = textRenderer.getWidth(badge);
-            context.drawTextWithShadow(
+            Component badge = file.editable()
+                ? Component.translatable("gui.attributification.mappings.world")
+                : Component.translatable("gui.attributification.mappings.read_only");
+            int badgeWidth = textRenderer.width(badge);
+            context.drawString(
                 textRenderer,
                 badge,
                 x + entryWidth - badgeWidth - 4,
@@ -562,16 +562,16 @@ public class MappingsScreen extends Screen {
 
             int nameLimit = x + entryWidth - badgeWidth - 10;
             context.enableScissor(x + 4, y, Math.max(x + 4, nameLimit), y + entryHeight);
-            int nsX = context.drawTextWithShadow(
+            int nsX = context.drawString(
                 textRenderer,
-                Text.literal(namespace).formatted(Formatting.DARK_GRAY),
+                Component.literal(namespace).withStyle(ChatFormatting.DARK_GRAY),
                 x + 4,
                 textY,
                 0xFF555555
             );
-            context.drawTextWithShadow(
+            context.drawString(
                 textRenderer,
-                Text.literal(name),
+                Component.literal(name),
                 nsX,
                 textY,
                 file.editable() ? 0xFFFFFFFF : 0xFFA0A0A0
@@ -582,7 +582,7 @@ public class MappingsScreen extends Screen {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             MappingsScreen.this.fileList.setSelected(this);
-            long now = Util.getMeasuringTimeMs();
+            long now = Util.getMillis();
             if (now - lastClickTime < 250L) {
                 MappingsScreen.this.openSelected();
             }

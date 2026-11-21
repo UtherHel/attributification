@@ -4,28 +4,28 @@ import java.util.List;
 import java.util.function.Consumer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
-import net.minecraft.client.gui.screen.narration.NarrationPart;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.CyclingButtonWidget;
-import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
-import net.minecraft.client.gui.widget.ElementListWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.narration.NarratedElementType;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 
 /**
  * Detailed editor for a single {@link EditableMapping}.
  * <p>
- * Every control lives inside an {@link ElementListWidget} row, which gives us
+ * Every control lives inside an {@link ContainerObjectSelectionList} row, which gives us
  * vanilla scrolling, clipping and — crucially — correct focus routing, so text
  * fields stay focused while typing.  Text fields write straight into the model
  * on change; the row list is only rebuilt on explicit add/remove presses.
@@ -44,7 +44,7 @@ class MappingEntryScreen extends Screen {
     private final EditableMapping mapping;
     private final boolean editable;
 
-    private final ThreePartsLayoutWidget layout = new ThreePartsLayoutWidget(
+    private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(
         this,
         33,
         40
@@ -58,7 +58,7 @@ class MappingEntryScreen extends Screen {
         boolean editable
     ) {
         super(
-            Text.translatable(
+            Component.translatable(
                 editable
                     ? "gui.attributification.mappings.entry_edit"
                     : "gui.attributification.mappings.entry_view"
@@ -73,38 +73,38 @@ class MappingEntryScreen extends Screen {
 
     @Override
     protected void init() {
-        layout.addHeader(title, textRenderer);
+        layout.addTitleHeader(title, font);
 
-        list = layout.addBody(new OptionListWidget());
+        list = layout.addToContents(new OptionListWidget());
 
-        DirectionalLayoutWidget footer = layout.addFooter(
-            DirectionalLayoutWidget.horizontal().spacing(8)
+        LinearLayout footer = layout.addToFooter(
+            LinearLayout.horizontal().spacing(8)
         );
-        footer.add(
-            ButtonWidget.builder(ScreenTexts.DONE, b -> close()).width(80).build()
+        footer.addChild(
+            Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(80).build()
         );
 
-        layout.forEachChild(this::addDrawableChild);
+        layout.visitWidgets(this::addRenderableWidget);
         refreshPositions();
     }
 
     @Override
-    protected void initTabNavigation() {
+    protected void repositionElements() {
         refreshPositions();
     }
 
     private void refreshPositions() {
-        layout.refreshPositions();
-        list.position(width, layout);
+        layout.arrangeElements();
+        list.updateSize(width, layout);
     }
 
     @Override
-    public void close() {
-        client.setScreen(parent);
+    public void onClose() {
+        minecraft.setScreen(parent);
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
@@ -118,18 +118,18 @@ class MappingEntryScreen extends Screen {
             "gui.attributification.mappings.mode",
             "gui.attributification.mappings.operation_conversion",
         }) {
-            max = Math.max(max, textRenderer.getWidth(Text.translatable(key)));
+            max = Math.max(max, font.width(Component.translatable(key)));
         }
         return max;
     }
 
     // ── The list ──────────────────────────────────────────────────────────
 
-    private class OptionListWidget extends ElementListWidget<Row> {
+    private class OptionListWidget extends ContainerObjectSelectionList<Row> {
 
         OptionListWidget() {
             super(
-                MinecraftClient.getInstance(),
+                Minecraft.getInstance(),
                 MappingEntryScreen.this.width,
                 MappingEntryScreen.this.layout.getContentHeight(),
                 MappingEntryScreen.this.layout.getHeaderHeight(),
@@ -154,7 +154,7 @@ class MappingEntryScreen extends Screen {
             // ── Sources ───────────────────────────────────────────────────
             addEntry(
                 new SectionRow(
-                    Text.translatable("gui.attributification.mappings.source")
+                    Component.translatable("gui.attributification.mappings.source")
                 )
             );
             for (int i = 0; i < mapping.sources.size(); i++) {
@@ -170,7 +170,7 @@ class MappingEntryScreen extends Screen {
             // ── Targets ───────────────────────────────────────────────────
             addEntry(
                 new SectionRow(
-                    Text.translatable("gui.attributification.mappings.target")
+                    Component.translatable("gui.attributification.mappings.target")
                 )
             );
             for (int i = 0; i < mapping.targets.size(); i++) {
@@ -186,7 +186,7 @@ class MappingEntryScreen extends Screen {
             // ── Exclude ───────────────────────────────────────────────────
             addEntry(
                 new SectionRow(
-                    Text.translatable("gui.attributification.mappings.exclude")
+                    Component.translatable("gui.attributification.mappings.exclude")
                 )
             );
             for (int i = 0; i < mapping.exclude.size(); i++) {
@@ -202,7 +202,7 @@ class MappingEntryScreen extends Screen {
             // ── Numbers & modes ───────────────────────────────────────────
             addEntry(
                 new SectionRow(
-                    Text.translatable("gui.attributification.mappings.tuning")
+                    Component.translatable("gui.attributification.mappings.tuning")
                 )
             );
             addEntry(
@@ -230,19 +230,19 @@ class MappingEntryScreen extends Screen {
                 new WidgetRow(
                     "gui.attributification.mappings.mode",
                     width ->
-                        CyclingButtonWidget.<EditableMapping.Mode>builder(
+                        CycleButton.<EditableMapping.Mode>builder(
                             EditableMapping.Mode::label
                         )
-                            .values(EditableMapping.Mode.values())
-                            .initially(mapping.mode)
-                            .omitKeyText()
-                            .tooltip(mode -> Tooltip.of(mode.description()))
-                            .build(
+                            .withValues(EditableMapping.Mode.values())
+                            .withInitialValue(mapping.mode)
+                            .displayOnlyValue()
+                            .withTooltip(mode -> Tooltip.create(mode.description()))
+                            .create(
                                 0,
                                 0,
                                 width,
                                 WIDGET_H,
-                                Text.translatable(
+                                Component.translatable(
                                     "gui.attributification.mappings.mode"
                                 ),
                                 (btn, value) -> mapping.mode = value
@@ -253,18 +253,18 @@ class MappingEntryScreen extends Screen {
                 new WidgetRow(
                     "gui.attributification.mappings.operation_conversion",
                     width ->
-                        CyclingButtonWidget.<EditableMapping.OpConversion>builder(
+                        CycleButton.<EditableMapping.OpConversion>builder(
                             EditableMapping.OpConversion::label
                         )
-                            .values(EditableMapping.OpConversion.values())
-                            .initially(mapping.operationConversion)
-                            .omitKeyText()
-                            .build(
+                            .withValues(EditableMapping.OpConversion.values())
+                            .withInitialValue(mapping.operationConversion)
+                            .displayOnlyValue()
+                            .create(
                                 0,
                                 0,
                                 width,
                                 WIDGET_H,
-                                Text.translatable(
+                                Component.translatable(
                                     "gui.attributification.mappings.operation_conversion"
                                 ),
                                 (btn, value) ->
@@ -279,20 +279,20 @@ class MappingEntryScreen extends Screen {
 
     // ── Rows ──────────────────────────────────────────────────────────────
 
-    private abstract static class Row extends ElementListWidget.Entry<Row> {}
+    private abstract static class Row extends ContainerObjectSelectionList.Entry<Row> {}
 
     /** A non-interactive section heading. */
     private class SectionRow extends Row {
 
-        private final Text label;
+        private final Component label;
 
-        SectionRow(Text label) {
-            this.label = label.copy().formatted(Formatting.YELLOW);
+        SectionRow(Component label) {
+            this.label = label.copy().withStyle(ChatFormatting.YELLOW);
         }
 
         @Override
         public void render(
-            DrawContext ctx,
+            GuiGraphics ctx,
             int index,
             int y,
             int x,
@@ -304,8 +304,8 @@ class MappingEntryScreen extends Screen {
             float delta
         ) {
             // Sits at the bottom of its row so it reads as a header for what follows.
-            ctx.drawTextWithShadow(
-                textRenderer,
+            ctx.drawString(
+                font,
                 label,
                 x,
                 y + entryHeight - 11,
@@ -314,24 +314,24 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public List<? extends Element> children() {
+        public List<? extends GuiEventListener> children() {
             return List.of();
         }
 
         @Override
-        public List<? extends Selectable> selectableChildren() {
+        public List<? extends NarratableEntry> narratables() {
             return List.of(
-                new Selectable() {
+                new NarratableEntry() {
                     @Override
-                    public Selectable.SelectionType getType() {
-                        return Selectable.SelectionType.HOVERED;
+                    public NarratableEntry.NarrationPriority narrationPriority() {
+                        return NarratableEntry.NarrationPriority.HOVERED;
                     }
 
                     @Override
-                    public void appendNarrations(
-                        NarrationMessageBuilder builder
+                    public void updateNarration(
+                        NarrationElementOutput builder
                     ) {
-                        builder.put(NarrationPart.TITLE, label);
+                        builder.add(NarratedElementType.TITLE, label);
                     }
                 }
             );
@@ -347,38 +347,38 @@ class MappingEntryScreen extends Screen {
 
         private final List<String> backing;
         private final int index;
-        private final TextFieldWidget field;
-        private final ButtonWidget searchBtn;
-        private final ButtonWidget removeBtn;
+        private final EditBox field;
+        private final Button searchBtn;
+        private final Button removeBtn;
 
         IdRow(List<String> backing, int index) {
             this.backing = backing;
             this.index = index;
 
-            field = new TextFieldWidget(
-                textRenderer,
+            field = new EditBox(
+                font,
                 0,
                 0,
                 100,
                 WIDGET_H,
-                Text.translatable("gui.attributification.mappings.attribute_id")
+                Component.translatable("gui.attributification.mappings.attribute_id")
             );
             field.setMaxLength(256);
-            field.setText(backing.get(index));
+            field.setValue(backing.get(index));
             field.setEditable(editable);
-            field.setPlaceholder(
-                Text.translatable(
+            field.setHint(
+                Component.translatable(
                     "gui.attributification.mappings.attribute_id"
-                ).formatted(Formatting.DARK_GRAY)
+                ).withStyle(ChatFormatting.DARK_GRAY)
             );
-            field.setChangedListener(value -> {
+            field.setResponder(value -> {
                 if (index < backing.size()) backing.set(index, value.trim());
             });
 
-            searchBtn = ButtonWidget.builder(
-                Text.literal("…"),
+            searchBtn = Button.builder(
+                Component.literal("…"),
                 b ->
-                    client.setScreen(
+                    minecraft.setScreen(
                         new AttributeSearchScreen(
                             MappingEntryScreen.this,
                             MappingsScreen.attributes(),
@@ -386,15 +386,15 @@ class MappingEntryScreen extends Screen {
                                 if (index < backing.size()) {
                                     backing.set(index, selected);
                                 }
-                                field.setText(selected);
+                                field.setValue(selected);
                             }
                         )
                     )
             )
                 .width(SEARCH_W)
                 .tooltip(
-                    Tooltip.of(
-                        Text.translatable(
+                    Tooltip.create(
+                        Component.translatable(
                             "gui.attributification.mappings.search_tooltip"
                         )
                     )
@@ -402,8 +402,8 @@ class MappingEntryScreen extends Screen {
                 .build();
             searchBtn.active = editable;
 
-            removeBtn = ButtonWidget.builder(
-                Text.literal("✕").formatted(Formatting.RED),
+            removeBtn = Button.builder(
+                Component.literal("✕").withStyle(ChatFormatting.RED),
                 b -> {
                     if (index < backing.size()) {
                         backing.remove(index);
@@ -413,8 +413,8 @@ class MappingEntryScreen extends Screen {
             )
                 .width(REMOVE_W)
                 .tooltip(
-                    Tooltip.of(
-                        Text.translatable(
+                    Tooltip.create(
+                        Component.translatable(
                             "gui.attributification.mappings.remove_mapping"
                         )
                     )
@@ -425,7 +425,7 @@ class MappingEntryScreen extends Screen {
 
         @Override
         public void render(
-            DrawContext ctx,
+            GuiGraphics ctx,
             int index,
             int y,
             int x,
@@ -455,12 +455,12 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public List<? extends Element> children() {
+        public List<? extends GuiEventListener> children() {
             return List.of(field, searchBtn, removeBtn);
         }
 
         @Override
-        public List<? extends Selectable> selectableChildren() {
+        public List<? extends NarratableEntry> narratables() {
             return List.of(field, searchBtn, removeBtn);
         }
     }
@@ -468,11 +468,11 @@ class MappingEntryScreen extends Screen {
     /** A single full-width "add another" button. */
     private class AddRow extends Row {
 
-        private final ButtonWidget button;
+        private final Button button;
 
         AddRow(String labelKey, Runnable action) {
-            button = ButtonWidget.builder(
-                Text.translatable(labelKey),
+            button = Button.builder(
+                Component.translatable(labelKey),
                 b -> action.run()
             ).build();
             button.active = editable;
@@ -480,7 +480,7 @@ class MappingEntryScreen extends Screen {
 
         @Override
         public void render(
-            DrawContext ctx,
+            GuiGraphics ctx,
             int index,
             int y,
             int x,
@@ -497,12 +497,12 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public List<? extends Element> children() {
+        public List<? extends GuiEventListener> children() {
             return List.of(button);
         }
 
         @Override
-        public List<? extends Selectable> selectableChildren() {
+        public List<? extends NarratableEntry> narratables() {
             return List.of(button);
         }
     }
@@ -513,16 +513,16 @@ class MappingEntryScreen extends Screen {
      */
     private class WidgetRow extends Row {
 
-        private final Text label;
-        private final net.minecraft.client.gui.widget.ClickableWidget widget;
+        private final Component label;
+        private final net.minecraft.client.gui.components.AbstractWidget widget;
 
         WidgetRow(
             String labelKey,
             java.util.function.IntFunction<
-                net.minecraft.client.gui.widget.ClickableWidget
+                net.minecraft.client.gui.components.AbstractWidget
             > factory
         ) {
-            this.label = Text.translatable(labelKey);
+            this.label = Component.translatable(labelKey);
             this.widget = factory.apply(120);
         }
 
@@ -533,7 +533,7 @@ class MappingEntryScreen extends Screen {
 
         @Override
         public void render(
-            DrawContext ctx,
+            GuiGraphics ctx,
             int index,
             int y,
             int x,
@@ -547,8 +547,8 @@ class MappingEntryScreen extends Screen {
             int w = widgetWidth(entryWidth);
             int top = y + (entryHeight - WIDGET_H) / 2;
 
-            ctx.drawTextWithShadow(
-                textRenderer,
+            ctx.drawString(
+                font,
                 label,
                 x,
                 y + (entryHeight - 9) / 2,
@@ -561,12 +561,12 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public List<? extends Element> children() {
+        public List<? extends GuiEventListener> children() {
             return List.of(widget);
         }
 
         @Override
-        public List<? extends Selectable> selectableChildren() {
+        public List<? extends NarratableEntry> narratables() {
             return List.of(widget);
         }
     }
@@ -574,41 +574,41 @@ class MappingEntryScreen extends Screen {
     /** A {@link WidgetRow} holding a validating numeric text field. */
     private class NumberRow extends Row {
 
-        private final Text label;
-        private final TextFieldWidget field;
+        private final Component label;
+        private final EditBox field;
 
         NumberRow(String labelKey, double initial, Consumer<Double> setter) {
-            this.label = Text.translatable(labelKey);
-            field = new TextFieldWidget(
-                textRenderer,
+            this.label = Component.translatable(labelKey);
+            field = new EditBox(
+                font,
                 0,
                 0,
                 80,
                 WIDGET_H,
-                Text.translatable(labelKey)
+                Component.translatable(labelKey)
             );
             field.setMaxLength(32);
-            field.setText(EditableMapping.format(initial));
+            field.setValue(EditableMapping.format(initial));
             field.setEditable(editable);
-            field.setChangedListener(value -> {
+            field.setResponder(value -> {
                 String trimmed = value.trim();
                 if (trimmed.isEmpty()) {
                     setter.accept(0.0);
-                    field.setEditableColor(0xFFFFFF);
+                    field.setTextColor(0xFFFFFF);
                     return;
                 }
                 try {
                     setter.accept(Double.parseDouble(trimmed));
-                    field.setEditableColor(0xFFFFFF);
+                    field.setTextColor(0xFFFFFF);
                 } catch (NumberFormatException ignored) {
-                    field.setEditableColor(0xFF5555);
+                    field.setTextColor(0xFF5555);
                 }
             });
         }
 
         @Override
         public void render(
-            DrawContext ctx,
+            GuiGraphics ctx,
             int index,
             int y,
             int x,
@@ -622,8 +622,8 @@ class MappingEntryScreen extends Screen {
             int w = Math.max(60, entryWidth - labelColumnWidth() - LABEL_GAP);
             int top = y + (entryHeight - WIDGET_H) / 2;
 
-            ctx.drawTextWithShadow(
-                textRenderer,
+            ctx.drawString(
+                font,
                 label,
                 x,
                 y + (entryHeight - 9) / 2,
@@ -636,12 +636,12 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public List<? extends Element> children() {
+        public List<? extends GuiEventListener> children() {
             return List.of(field);
         }
 
         @Override
-        public List<? extends Selectable> selectableChildren() {
+        public List<? extends NarratableEntry> narratables() {
             return List.of(field);
         }
     }
