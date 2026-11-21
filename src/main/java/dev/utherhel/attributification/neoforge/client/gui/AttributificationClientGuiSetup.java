@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge.client.gui;
 
-import dev.utherhel.attributification.Attributifaction;
+//? if neoforge {
+/*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.*;
 import dev.utherhel.attributification.neoforge.gui.AttributificationPayloadHandler;
@@ -10,9 +11,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-/**
+/^*
  * Client-side setup that wires network payload callbacks to open the common {@link MappingsScreen}.
- */
+ ^/
 @EventBusSubscriber(modid = Attributifaction.MOD_ID, value = Dist.CLIENT)
 public final class AttributificationClientGuiSetup {
 
@@ -96,3 +97,4 @@ public final class AttributificationClientGuiSetup {
         });
     }
 }
+*///?}

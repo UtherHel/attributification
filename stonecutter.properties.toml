@@ -1,0 +1,37 @@
+# https://stonecutter.kikugie.dev/wiki/v2/reference/gradle-api/structured-properties
+mod.id = "attributification"
+mod.name = "Attributification"
+mod.group = "dev.utherhel.attributification"
+mod.version = "2.1.0"
+
+deps.fabric_loader = "0.18.4"
+loomx.loom_version = "1.20.0-alpha.31"
+deps.mixin = "0.8.5"
+
+# mod.mc_compat and mod.loader_compat go into fabric.mod.json / mods.toml / neoforge.mods.toml
+
+["1.21.1"]
+mod.pack_format = 48
+
+["1.20.1"]
+mod.pack_format = 15
+
+[fabric."1.21.1"]
+mod.mc_compat = "~1.21.1"
+mod.loader_compat = ">=0.16.5"
+deps.fabric_api = "0.103.0+1.21.1"
+
+[neoforge."1.21.1"]
+mod.mc_compat = "[1.21.1,)"
+mod.loader_compat = "[21.1,)"
+deps.neo_loader = "21.1.267"
+
+[fabric."1.20.1"]
+mod.mc_compat = "~1.20.1"
+mod.loader_compat = ">=0.19.3"
+deps.fabric_api = "0.92.11+1.20.1"
+
+[forge."1.20.1"]
+mod.mc_compat = "[1.20.1,)"
+mod.loader_compat = "[47,)"
+deps.forge_loader = "1.20.1-47.4.29"

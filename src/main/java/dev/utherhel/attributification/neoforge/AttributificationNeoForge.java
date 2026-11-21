@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge;
 
-import dev.utherhel.attributification.Attributifaction;
+//? if neoforge {
+/*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.neoforge.config.AttributificationNeoForgeConfig;
 import dev.utherhel.attributification.neoforge.gui.AttributificationPayloadHandler;
@@ -36,10 +37,10 @@ public final class AttributificationNeoForge {
         modEventBus.register(AttributificationPayloadHandler.class);
     }
 
-    /**
+    /^*
      * Captures the current ResourceManager so the GUI payload handler
      * can resolve built-in datapack files and trigger reloads.
-     */
+     ^/
     @SubscribeEvent
     public void onDatapackSync(OnDatapackSyncEvent event) {
         AttributificationPayloadHandler.currentResourceManager = event
@@ -48,12 +49,13 @@ public final class AttributificationNeoForge {
             .getResourceManager();
     }
 
-    /**
+    /^*
      * Registers our datapack reload listener.
      * Called on server start and /reload.
-     */
+     ^/
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
         event.addListener((ResourceManagerReloadListener) MappingLoader::load);
     }
 }
+*///?}

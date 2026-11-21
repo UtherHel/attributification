@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.forge;
 
-import dev.utherhel.attributification.Attributifaction;
+//? if forge {
+/*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
@@ -79,3 +80,4 @@ public final class AttributificationForgeEvents {
         return new AttributeModifier(modifier.getId(), modifier.getName(), value, op);
     }
 }
+*///?}

@@ -2,9 +2,11 @@ package dev.utherhel.attributification.gui.network;
 
 import dev.utherhel.attributification.Attributifaction;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+//? if >=1.21 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+//?}
 
 /**
  * Server → Client: the JSON content of a requested mapping file.
@@ -12,28 +14,34 @@ import net.minecraft.resources.ResourceLocation;
  * @param fileName    the file name
  * @param jsonContent the raw JSON content
  */
+//? if >=1.21 {
 public record MappingFileContentPayload(String fileName, String jsonContent) implements CustomPacketPayload {
+//?} else {
+/*public record MappingFileContentPayload(String fileName, String jsonContent) {
+*///?}
 
+    //? if >=1.21 {
     public static final Type<MappingFileContentPayload> ID = new Type<>(
         ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "mapping_file_content")
     );
 
     public static final StreamCodec<FriendlyByteBuf, MappingFileContentPayload> CODEC =
-        new StreamCodec<>() {
-            @Override
-            public MappingFileContentPayload decode(FriendlyByteBuf buf) {
-                return new MappingFileContentPayload(buf.readUtf(), buf.readUtf());
-            }
-
-            @Override
-            public void encode(FriendlyByteBuf buf, MappingFileContentPayload payload) {
-                buf.writeUtf(payload.fileName);
-                buf.writeUtf(payload.jsonContent);
-            }
-        };
+        StreamCodec.of((buf, payload) -> payload.encode(buf), MappingFileContentPayload::decode);
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
         return ID;
+    }
+    //?} else {
+    /*public static final ResourceLocation ID = new ResourceLocation(Attributifaction.MOD_ID, "mapping_file_content");
+    *///?}
+
+    public static MappingFileContentPayload decode(FriendlyByteBuf buf) {
+        return new MappingFileContentPayload(buf.readUtf(), buf.readUtf());
+    }
+
+    public void encode(FriendlyByteBuf buf) {
+        buf.writeUtf(this.fileName);
+        buf.writeUtf(this.jsonContent);
     }
 }

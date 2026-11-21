@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.forge.client.gui;
 
-import dev.utherhel.attributification.client.gui.MappingsScreen;
+//? if forge {
+/*import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.ConvertLegacyMappingsPayload;
 import dev.utherhel.attributification.gui.network.DeleteMappingFilePayload;
 import dev.utherhel.attributification.gui.network.RequestAttributesListPayload;
@@ -56,3 +57,4 @@ public final class AttributificationClientGuiSetup {
         AttributificationPayloadHandler.legacyCountHandler = MappingsScreen::deliverLegacyCount;
     }
 }
+*///?}

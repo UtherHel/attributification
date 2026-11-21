@@ -1,33 +1,29 @@
 package dev.utherhel.attributification.forge;
 
-import dev.architectury.platform.forge.EventBuses;
-import dev.utherhel.attributification.Attributifaction;
+//? if forge {
+/*import dev.utherhel.attributification.Attributifaction;
+import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.forge.config.AttributificationForgeConfig;
 import dev.utherhel.attributification.forge.gui.AttributificationPayloadHandler;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(Attributifaction.MOD_ID)
 public final class AttributificationForge {
     public AttributificationForge() {
-        EventBuses.registerModEventBus(Attributifaction.MOD_ID, FMLJavaModLoadingContext.get().getModEventBus());
+        // Register the Forge config first; values are read lazily once Forge has loaded the file
+        AttributificationForgeConfig forgeConfig = AttributificationForgeConfig.createAndRegister();
 
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, AttributificationForgeConfig.getSpec());
+        // Run our common setup with the platform config
+        Attributifaction.init(forgeConfig);
 
-        // Do NOT read config values here: ModConfigSpec throws
-        // "Cannot get config value before config is loaded" until the
-        // config loading event fires. Apply the level once it is loaded.
-        Attributifaction.init();
-
-        FMLJavaModLoadingContext.get().getModEventBus().addListener((ModConfigEvent event) -> {
-            if (event.getConfig().getSpec() == AttributificationForgeConfig.getSpec()) {
-                Attributifaction.getConfig().setLogLevel(AttributificationForgeConfig.getLogLevel());
-            }
-        });
+        // Datapack reload listener for attribute mappings (data/<namespace>/attributification/mappings/*.json)
+        MinecraftForge.EVENT_BUS.addListener((AddReloadListenerEvent event) ->
+            event.addListener((ResourceManagerReloadListener) MappingLoader::load));
 
         AttributificationPayloadHandler.register();
     }
 }
+*///?}

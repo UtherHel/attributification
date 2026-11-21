@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge.client;
 
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+//? if neoforge {
+/*import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 public final class AttributificationNeoForgeClient {
 
@@ -11,3 +12,4 @@ public final class AttributificationNeoForgeClient {
         // Client setup placeholder
     }
 }
+*///?}

@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge;
 
-import dev.utherhel.attributification.AttributeUnifier;
+//? if neoforge {
+/*import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
@@ -16,20 +17,20 @@ import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
 
-/**
+/^*
  * Handles NeoForge-specific events for attribute conversion.
  * <p>
  * On NeoForge, item attribute modifiers pass through {@link ItemAttributeModifierEvent}.
  * We intercept this to convert source → target modifiers at the gameplay level.
- */
+ ^/
 public final class AttributificationNeoForgeEvents {
 
     private AttributificationNeoForgeEvents() {}
 
-    /**
+    /^*
      * Called when item attribute modifiers are being computed.
      * Converts source → target modifiers to ensure gameplay unification.
-     */
+     ^/
     @SubscribeEvent
     public static void onItemAttributeModifiers(
         ItemAttributeModifierEvent event
@@ -117,9 +118,9 @@ public final class AttributificationNeoForgeEvents {
         }
     }
 
-    /**
+    /^*
      * Converts a modifier value and operation according to mapping settings.
-     */
+     ^/
     private static AttributeModifier convertModifier(
         AttributeModifier modifier,
         AttributeMappingEntry mapping
@@ -150,9 +151,9 @@ public final class AttributificationNeoForgeEvents {
         return new AttributeModifier(modifier.id(), value, op);
     }
 
-    /**
+    /^*
      * Internal record for queued modifier conversions.
-     */
+     ^/
     private record Conversion(
         Holder<Attribute> sourceAttribute,
         ResourceLocation modifierId,
@@ -161,3 +162,4 @@ public final class AttributificationNeoForgeEvents {
         EquipmentSlotGroup slot
     ) {}
 }
+*///?}

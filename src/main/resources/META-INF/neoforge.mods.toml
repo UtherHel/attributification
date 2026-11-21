@@ -3,10 +3,10 @@ loaderVersion = "[4,)"
 license = "MIT"
 
 [[mods]]
-logoFile = "assets/attributification/icon.png"
-modId = "attributification"
+logoFile = "assets/${id}/icon.png"
+modId = "${id}"
 version = "${version}"
-displayName = "Attributification"
+displayName = "${name}"
 authors = "UtherHel"
 description = '''
 Unifies similar attributes from different mods with configurable conversion coefficients to prevent duplication and improve compatibility.
@@ -18,23 +18,16 @@ config = "attributification.mixins.json"
 [[mixins]]
 config = "attributification.neoforge.mixins.json"
 
-[[dependencies.attributification]]
+[[dependencies.${id}]]
 modId = "neoforge"
 type = "required"
-versionRange = "[21.1,)"
+versionRange = "${loader}"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.attributification]]
+[[dependencies.${id}]]
 modId = "minecraft"
 type = "required"
-versionRange = "[1.21.1,)"
+versionRange = "${minecraft}"
 ordering = "NONE"
-side = "BOTH"
-
-[[dependencies.attributification]]
-modId = "architectury"
-type = "required"
-versionRange = "[13.0.6,)"
-ordering = "AFTER"
 side = "BOTH"

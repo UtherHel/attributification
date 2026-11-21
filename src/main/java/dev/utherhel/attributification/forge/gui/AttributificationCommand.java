@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.forge.gui;
 
-import com.mojang.brigadier.CommandDispatcher;
+//? if forge {
+/*import com.mojang.brigadier.CommandDispatcher;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;
 import net.minecraft.commands.CommandSourceStack;
@@ -47,3 +48,4 @@ public final class AttributificationCommand {
         );
     }
 }
+*///?}

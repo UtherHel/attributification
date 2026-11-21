@@ -1,5 +1,6 @@
 package dev.utherhel.attributification.fabric;
 
+//? if fabric {
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.fabric.config.AttributificationFabricConfig;
@@ -34,18 +35,25 @@ public final class AttributificationFabric implements ModInitializer {
             new SimpleSynchronousResourceReloadListener() {
                 @Override
                 public ResourceLocation getFabricId() {
+                    //? if >=1.21 {
                     return ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "mappings");
+                    //?} else {
+                    /*return new ResourceLocation(Attributifaction.MOD_ID, "mappings");
+                    *///?}
                 }
 
                 @Override
                 public void onResourceManagerReload(ResourceManager manager) {
                     MappingLoader.load(manager);
+                    //? if >=1.21 {
                     // Capture ResourceManager for GUI file operations
                     dev.utherhel.attributification.fabric.gui.AttributificationFabricPayloadHandler.setResourceManager(
                         manager
                     );
+                    //?}
                 }
             }
         );
     }
 }
+//?}
