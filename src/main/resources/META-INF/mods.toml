@@ -3,34 +3,25 @@ loaderVersion = "[47,)"
 license = "MIT"
 
 [[mods]]
-logoFile = "assets/attributification/icon.png"
-modId = "attributification"
+logoFile = "assets/${id}/icon.png"
+modId = "${id}"
 version = "${version}"
-displayName = "Attributification"
+displayName = "${name}"
 authors = "UtherHel"
 description = '''
 Unifies similar attributes from different mods with configurable conversion coefficients to prevent duplication and improve compatibility.
 '''
 
-[[dependencies.attributification]]
+[[dependencies.${id}]]
 modId = "forge"
 mandatory = true
-versionRange = "[47,)"
+versionRange = "${loader}"
 ordering = "NONE"
 side = "BOTH"
 
-[[dependencies.attributification]]
+[[dependencies.${id}]]
 modId = "minecraft"
 mandatory = true
-versionRange = "[1.20.1,)"
+versionRange = "${minecraft}"
 ordering = "NONE"
 side = "BOTH"
-
-[[dependencies.attributification]]
-modId = "architectury"
-mandatory = true
-versionRange = "[9.2.14,)"
-ordering = "AFTER"
-side = "BOTH"
-
-

@@ -1,5 +1,6 @@
 package dev.utherhel.attributification.fabric.client;
 
+//? if fabric {
 import net.fabricmc.api.ClientModInitializer;
 
 public final class AttributificationFabricClient implements ClientModInitializer {
@@ -8,3 +9,4 @@ public final class AttributificationFabricClient implements ClientModInitializer
         // This entrypoint is suitable for setting up client-specific logic, such as rendering.
     }
 }
+//?}

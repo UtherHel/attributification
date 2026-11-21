@@ -1,30 +1,42 @@
 package dev.utherhel.attributification.forge.config;
 
+//? if forge {
+/*import dev.utherhel.attributification.config.AttributificationConfig;
 import dev.utherhel.attributification.config.LogLevel;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.config.ModConfig;
 
-public final class AttributificationForgeConfig {
-    private static final ForgeConfigSpec.Builder BUILDER = new ForgeConfigSpec.Builder();
-    private static final ForgeConfigSpec SPEC;
+/^*
+ * Forge configuration using {@link ForgeConfigSpec} (TOML).
+ * <p>
+ * Only stores {@code debug.logLevel}. Attribute mappings are loaded from datapacks.
+ * The spec is registered with {@link ModConfig.Type#COMMON} during mod construction.
+ ^/
+public final class AttributificationForgeConfig implements AttributificationConfig {
 
-    public static final ForgeConfigSpec.EnumValue<LogLevel> LOG_LEVEL;
+    private final ForgeConfigSpec.EnumValue<LogLevel> logLevelValue;
+    private final ForgeConfigSpec spec;
 
-    static {
-        BUILDER.comment("Debug and logging configuration").push("debug");
-        LOG_LEVEL = BUILDER
+    private AttributificationForgeConfig(ForgeConfigSpec.Builder builder) {
+        builder.comment("Debug and logging configuration").push("debug");
+        this.logLevelValue = builder
             .comment("Logging level: NONE, ERRORS, WARNINGS, ALL")
             .defineEnum("logLevel", LogLevel.ERRORS);
-        BUILDER.pop();
-        SPEC = BUILDER.build();
+        builder.pop();
+        this.spec = builder.build();
     }
 
-    private AttributificationForgeConfig() {}
-
-    public static ForgeConfigSpec getSpec() {
-        return SPEC;
+    public static AttributificationForgeConfig createAndRegister() {
+        AttributificationForgeConfig config = new AttributificationForgeConfig(new ForgeConfigSpec.Builder());
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, config.spec);
+        return config;
     }
 
-    public static LogLevel getLogLevel() {
-        return LOG_LEVEL.get();
+    /^* Until Forge has loaded the file, the default level is used. ^/
+    @Override
+    public LogLevel getPlatformLogLevel() {
+        return spec.isLoaded() ? logLevelValue.get() : LogLevel.ERRORS;
     }
 }
+*///?}

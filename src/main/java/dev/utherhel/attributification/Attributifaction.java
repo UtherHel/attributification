@@ -1,6 +1,5 @@
 package dev.utherhel.attributification;
 
-import dev.architectury.platform.Platform;
 import dev.utherhel.attributification.config.AttributificationConfig;
 import dev.utherhel.attributification.config.DefaultAttributificationConfig;
 import java.util.ArrayList;
@@ -29,7 +28,11 @@ public final class Attributifaction {
      */
     public static void init(AttributificationConfig platformConfig) {
         // Detect platform
-        isFabric = Platform.isFabric();
+        //? if fabric {
+        isFabric = true;
+        //?} else {
+        /*isFabric = false;
+        *///?}
         AttributificationLogger.info(
             "Running on platform: " + (isFabric ? "Fabric" : "NeoForge")
         );

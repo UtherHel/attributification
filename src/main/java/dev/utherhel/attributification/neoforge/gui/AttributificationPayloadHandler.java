@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge.gui;
 
-import com.google.gson.Gson;
+//? if neoforge {
+/*import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -36,7 +37,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-/**
+/^*
  * Server-side handler for Attributification GUI network payloads.
  * <p>
  * Registers all custom payloads in {@link RegisterPayloadHandlersEvent} and
@@ -44,7 +45,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * <p>
  * Client-bound payloads delegate to static callbacks set by
  * {@link dev.utherhel.attributification.neoforge.client.gui.AttributificationClientGuiSetup}.
- */
+ ^/
 public final class AttributificationPayloadHandler {
 
     private static final Gson GSON = new GsonBuilder()
@@ -65,10 +66,10 @@ public final class AttributificationPayloadHandler {
 
     private AttributificationPayloadHandler() {}
 
-    /**
+    /^*
      * Registers all custom payloads.
      * Called on both logical sides during mod construction.
-     */
+     ^/
     @SubscribeEvent
     public static void register(final RegisterPayloadHandlersEvent event) {
         final var registrar = event.registrar(Attributifaction.MOD_ID);
@@ -527,25 +528,25 @@ public final class AttributificationPayloadHandler {
 
     // ── Helpers ─────────────────────────────────────────────────────────
 
-    /**
+    /^*
      * Root of the world datapack that holds every GUI-authored mapping file.
      * <p>
      * Path: {@code <world>/datapacks/attributification_gui/}
-     */
+     ^/
     private static Path getWorldDatapackRoot(MinecraftServer server) {
         return server
             .getWorldPath(LevelResource.ROOT)
             .resolve("datapacks/" + GUI_DATAPACK_NAME);
     }
 
-    /**
+    /^*
      * Resolves a mapping file id to its path inside the world datapack.
      * <p>
      * Writing under the id's own namespace is what makes an override work: a
      * file at {@code data/<ns>/attributification/mappings/<name>.json} shadows
      * the built-in resource with the same id, because world datapacks load
      * after mod-provided ones.
-     */
+     ^/
     private static Path getWorldFilePath(MinecraftServer server, String id) {
         return getWorldDatapackRoot(server)
             .resolve("data")
@@ -554,7 +555,7 @@ public final class AttributificationPayloadHandler {
             .resolve(MappingFileNames.fileNameOf(id));
     }
 
-    /** Lists the mapping file ids present in the world datapack. */
+    /^* Lists the mapping file ids present in the world datapack. ^/
     private static List<String> listWorldFileIds(MinecraftServer server) {
         Path dataDir = getWorldDatapackRoot(server).resolve("data");
         if (!Files.isDirectory(dataDir)) return List.of();
@@ -585,11 +586,11 @@ public final class AttributificationPayloadHandler {
         return ids;
     }
 
-    /**
+    /^*
      * Writes {@code pack.mcmeta} for the world datapack if it is missing.
      * Without it the folder is not a datapack at all and nothing the GUI saves
      * would ever be loaded.
-     */
+     ^/
     private static void ensureWorldDatapackMeta(MinecraftServer server)
         throws IOException {
         Path meta = getWorldDatapackRoot(server).resolve("pack.mcmeta");
@@ -607,3 +608,4 @@ public final class AttributificationPayloadHandler {
         Files.writeString(meta, GSON.toJson(root), StandardCharsets.UTF_8);
     }
 }
+*///?}

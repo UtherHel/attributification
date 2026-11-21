@@ -1,17 +1,18 @@
 package dev.utherhel.attributification.neoforge.config;
 
-import dev.utherhel.attributification.config.AttributificationConfig;
+//? if neoforge {
+/*import dev.utherhel.attributification.config.AttributificationConfig;
 import dev.utherhel.attributification.config.LogLevel;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-/**
+/^*
  * NeoForge-specific configuration using {@link ModConfigSpec} (TOML).
  * <p>
  * Only stores {@code debug.logLevel}. Attribute mappings are loaded from datapacks.
  * The spec is registered with {@link ModConfig.Type#COMMON} during mod construction.
- */
+ ^/
 public final class AttributificationNeoForgeConfig
     implements AttributificationConfig
 {
@@ -28,11 +29,11 @@ public final class AttributificationNeoForgeConfig
         this.spec = builder.build();
     }
 
-    /**
+    /^*
      * Creates the config, builds the spec, and registers it on the given mod container.
      *
      * @param container the mod container to register the config with
-     */
+     ^/
     public static AttributificationNeoForgeConfig createAndRegister(
         ModContainer container
     ) {
@@ -47,10 +48,11 @@ public final class AttributificationNeoForgeConfig
         return logLevelValue.get();
     }
 
-    /**
+    /^*
      * Returns the underlying {@link ModConfigSpec} for reference.
-     */
+     ^/
     public ModConfigSpec getSpec() {
         return spec;
     }
 }
+*///?}

@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge.gui;
 
-import dev.utherhel.attributification.Attributifaction;
+//? if neoforge {
+/*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
@@ -12,12 +13,12 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import static net.minecraft.commands.Commands.literal;
 
-/**
+/^*
  * Registers the {@code /attributification gui} command on the NeoForge server.
  * <p>
  * Sends an {@link OpenGuiPayload} to the executing player, which the client
  * handles by opening the mappings editor screen.
- */
+ ^/
 @EventBusSubscriber(modid = Attributifaction.MOD_ID)
 public final class AttributificationCommand {
 
@@ -47,3 +48,4 @@ public final class AttributificationCommand {
         );
     }
 }
+*///?}

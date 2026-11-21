@@ -1,5 +1,6 @@
 package dev.utherhel.attributification.mixin;
 
+//? if >=1.21 {
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
@@ -209,3 +210,164 @@ public class ItemStackMixin {
         return new AttributeModifier(modifier.id(), value, op);
     }
 }
+//?} else {
+/*import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import dev.utherhel.attributification.Attributifaction;
+import dev.utherhel.attributification.AttributificationLogger;
+import dev.utherhel.attributification.AttributeUnifier;
+import dev.utherhel.attributification.config.AttributeMappingEntry;
+import dev.utherhel.attributification.util.AttributeUtils;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.Map;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.ItemStack;
+
+/^*
+ * Shows target attribute in tooltip with converted values
+ ^/
+@Mixin(ItemStack.class)
+public class ItemStackMixin {
+    
+    @Unique
+    private static final ThreadLocal<Boolean> isProcessing = ThreadLocal.withInitial(() -> false);
+    
+    /^*
+     * Converts source → target for tooltip display
+     ^/
+    @Inject(method = "getAttributeModifiers", at = @At("RETURN"), cancellable = true)
+    private void convertTooltip(EquipmentSlot slot, CallbackInfoReturnable<Multimap<Attribute, AttributeModifier>> cir) {
+        Boolean processing = isProcessing.get();
+        if (Boolean.TRUE.equals(processing)) return;
+        
+        isProcessing.set(true);
+        try {
+            AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
+            if (unifier == null) return;
+            
+            Multimap<Attribute, AttributeModifier> original = cir.getReturnValue();
+            if (original.isEmpty()) return;
+            
+            Multimap<Attribute, AttributeModifier> converted = convertAttributes(original, unifier);
+            if (converted != null) {
+                cir.setReturnValue(converted);
+            }
+        } finally {
+            isProcessing.set(false);
+        }
+    }
+    
+    /^*
+     * Converts all attributes in the multimap
+     ^/
+    @Unique
+    private Multimap<Attribute, AttributeModifier> convertAttributes(
+            Multimap<Attribute, AttributeModifier> original, AttributeUnifier unifier) {
+        Multimap<Attribute, AttributeModifier> converted = HashMultimap.create();
+        boolean hasChanges = false;
+        
+        for (Map.Entry<Attribute, AttributeModifier> entry : original.entries()) {
+            if (processAttributeEntry(entry, unifier, converted)) {
+                hasChanges = true;
+            }
+        }
+        
+        return hasChanges ? converted : null;
+    }
+    
+    /^*
+     * Processes a single attribute entry
+     * @return true if changes were made
+     ^/
+    @Unique
+    private boolean processAttributeEntry(Map.Entry<Attribute, AttributeModifier> entry,
+                                          AttributeUnifier unifier,
+                                          Multimap<Attribute, AttributeModifier> converted) {
+        Attribute sourceAttr = entry.getKey();
+        AttributeModifier modifier = entry.getValue();
+        
+        String sourceId = AttributeUtils.getAttributeId(sourceAttr);
+        if (sourceId == null || !unifier.shouldUnify(sourceId)) {
+            converted.put(sourceAttr, modifier);
+            return false;
+        }
+        
+        AttributeMappingEntry mapping = unifier.getMapping(sourceId);
+        if (mapping == null) {
+            converted.put(sourceAttr, modifier);
+            return false;
+        }
+        
+        Attribute targetAttr = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+        if (targetAttr == null) {
+            converted.put(sourceAttr, modifier);
+            return false;
+        }
+        
+        applyMapping(sourceId, sourceAttr, targetAttr, modifier, mapping, converted);
+        return true;
+    }
+    
+    /^*
+     * Applies mapping to modifier
+     ^/
+    @Unique
+    private void applyMapping(String sourceId, Attribute sourceAttr, Attribute targetAttr,
+                             AttributeModifier modifier, AttributeMappingEntry mapping,
+                             Multimap<Attribute, AttributeModifier> converted) {
+        if (mapping.isOnlyVisualChange()) {
+            AttributificationLogger.info("[ItemStack] Visual change only: " + sourceId + " -> " + AttributeUtils.getAttributeId(targetAttr));
+            converted.put(targetAttr, modifier);
+            return;
+        }
+        
+        AttributeModifier convertedModifier = convertModifier(modifier, mapping);
+        AttributificationLogger.info("[ItemStack] Converted tooltip: " + sourceId + " -> " + 
+            AttributeUtils.getAttributeId(targetAttr) + ", value: " + modifier.getAmount() + " -> " + convertedModifier.getAmount());
+        converted.put(targetAttr, convertedModifier);
+    }
+    
+    /^*
+     * Converts modifier for tooltip display
+     ^/
+    @Unique
+    private AttributeModifier convertModifier(AttributeModifier modifier, AttributeMappingEntry mapping) {
+        AttributeModifier.Operation op = modifier.getOperation();
+        double value = modifier.getAmount();
+        
+        // Convert value (only for ADDITION)
+        if (op == AttributeModifier.Operation.ADDITION) {
+            value = value / mapping.getConversionEquivalence();
+        }
+        
+        // Convert operation
+        if (op == AttributeModifier.Operation.ADDITION) {
+            switch (mapping.getOperationConversionType()) {
+                case ADDITION_TO_MULTIPLY_BASE:
+                    op = AttributeModifier.Operation.MULTIPLY_BASE;
+                    break;
+                case ADDITION_TO_MULTIPLY_TOTAL:
+                    op = AttributeModifier.Operation.MULTIPLY_TOTAL;
+                    break;
+                case DEFAULT:
+                default:
+                    break;
+            }
+        }
+        
+        return new AttributeModifier(
+            modifier.getId(),
+            modifier.getName(),
+            value,
+            op
+        );
+    }
+}
+*///?}

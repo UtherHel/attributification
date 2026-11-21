@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.forge.client;
 
-import dev.utherhel.attributification.Attributifaction;
+//? if forge {
+/*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.forge.client.gui.AttributificationClientGuiSetup;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -16,3 +17,4 @@ public final class AttributificationForgeClient {
         event.enqueueWork(AttributificationClientGuiSetup::init);
     }
 }
+*///?}

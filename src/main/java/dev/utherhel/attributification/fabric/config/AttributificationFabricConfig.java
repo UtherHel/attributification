@@ -1,5 +1,6 @@
 package dev.utherhel.attributification.fabric.config;
 
+//? if fabric {
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -113,3 +114,4 @@ public class AttributificationFabricConfig implements AttributificationConfig {
         save();
     }
 }
+//?}

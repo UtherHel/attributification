@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.neoforge.mixin;
 
-import com.google.common.collect.Multimap;
+//? if neoforge {
+/*import com.google.common.collect.Multimap;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import dev.utherhel.attributification.Attributifaction;
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/**
+/^*
  * NeoForge-specific mixin that intercepts {@link AttributeUtil#applyTextFor}
  * to convert source → target attribute modifiers in tooltip rendering.
  * <p>
@@ -31,16 +32,16 @@ import java.util.function.Consumer;
  * via the vanilla {@code ItemStack.applyAttributeModifier()} path in all cases.
  * Without this mixin, unified attributes would appear with the source name
  * and unconverted values in NeoForge tooltips.
- */
+ ^/
 @Mixin(AttributeUtil.class)
 public class NeoForgeAttributeUtilMixin {
 
     @Unique
     private static final ThreadLocal<Boolean> isProcessing = ThreadLocal.withInitial(() -> false);
 
-    /**
+    /^*
      * Wraps {@code applyTextFor} to convert source → target modifiers before tooltip rendering.
-     */
+     ^/
     @WrapMethod(method = "applyTextFor")
     private static void wrapApplyTextFor(
             ItemStack stack,
@@ -112,9 +113,9 @@ public class NeoForgeAttributeUtilMixin {
         }
     }
 
-    /**
+    /^*
      * Converts a modifier value and operation according to mapping settings.
-     */
+     ^/
     @Unique
     private static AttributeModifier convertModifier(AttributeModifier modifier, AttributeMappingEntry mapping) {
         AttributeModifier.Operation op = modifier.operation();
@@ -147,3 +148,4 @@ public class NeoForgeAttributeUtilMixin {
         );
     }
 }
+*///?}
