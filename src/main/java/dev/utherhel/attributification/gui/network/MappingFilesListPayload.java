@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?}
@@ -15,15 +15,19 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  *
  * @param files list of mapping file entries
  */
-//? if >=1.21 {
+//? if >=1.20.5 {
 public record MappingFilesListPayload(List<MappingFileEntry> files) implements CustomPacketPayload {
 //?} else {
 /*public record MappingFilesListPayload(List<MappingFileEntry> files) {
 *///?}
 
-    //? if >=1.21 {
+    //? if >=1.20.5 {
     public static final Type<MappingFilesListPayload> ID = new Type<>(
+        //? if >=1.21 {
         ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "mapping_files_list")
+        //?} else {
+        /*new ResourceLocation(Attributifaction.MOD_ID, "mapping_files_list")
+        *///?}
     );
 
     public static final StreamCodec<FriendlyByteBuf, MappingFilesListPayload> CODEC =

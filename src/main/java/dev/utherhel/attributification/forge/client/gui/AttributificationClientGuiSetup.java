@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.forge.client.gui;
 
-//? if forge {
+//? if forge || (neoforge && <1.20.5) {
 /*import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.ConvertLegacyMappingsPayload;
 import dev.utherhel.attributification.gui.network.DeleteMappingFilePayload;
@@ -9,8 +9,13 @@ import dev.utherhel.attributification.gui.network.RequestMappingFileContentPaylo
 import dev.utherhel.attributification.gui.network.RequestMappingFilesPayload;
 import dev.utherhel.attributification.gui.network.SaveMappingFilePayload;
 import dev.utherhel.attributification.forge.gui.AttributificationPayloadHandler;
-import net.minecraftforge.api.distmarker.Dist;
+//? if forge {
+/^import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+^///?} else {
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+//?}
 
 @OnlyIn(Dist.CLIENT)
 public final class AttributificationClientGuiSetup {

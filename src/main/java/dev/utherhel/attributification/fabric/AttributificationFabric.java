@@ -37,8 +37,12 @@ public final class AttributificationFabric implements ModInitializer {
             new SimpleSynchronousResourceReloadListener() {
                 @Override
                 public ResourceLocation getFabricId() {
+                    //? if >=1.20.5 {
                     //? if >=1.21 {
                     return ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "mappings");
+                    //?} else {
+                    /*return new ResourceLocation(Attributifaction.MOD_ID, "mappings");
+                    *///?}
                     //?} else {
                     /*return new ResourceLocation(Attributifaction.MOD_ID, "mappings");
                     *///?}
@@ -47,7 +51,7 @@ public final class AttributificationFabric implements ModInitializer {
                 @Override
                 public void onResourceManagerReload(ResourceManager manager) {
                     MappingLoader.load(manager);
-                    //? if >=1.21 {
+                    //? if >=1.20.5 {
                     // Capture ResourceManager for GUI file operations
                     dev.utherhel.attributification.fabric.gui.AttributificationFabricPayloadHandler.setResourceManager(
                         manager

@@ -3,7 +3,7 @@ package dev.utherhel.attributification.gui.network;
 import dev.utherhel.attributification.AttributificationLogger;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.server.permissions.Permissions;
 *///?}
 
@@ -35,7 +35,7 @@ public final class AdminGate {
     }
 
     public static boolean isOperator(ServerPlayer player) {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
         *///?} else {
         return player.hasPermissions(PERMISSION_LEVEL);
@@ -44,7 +44,7 @@ public final class AdminGate {
 
     /** For {@code .requires(...)} of the editor command. */
     public static boolean isOperator(CommandSourceStack source) {
-        //? if >=26.1 {
+        //? if >=1.21.11 {
         /*return source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
         *///?} else {
         return source.hasPermission(PERMISSION_LEVEL);

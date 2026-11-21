@@ -1,16 +1,23 @@
 package dev.utherhel.attributification.forge.gui;
 
-//? if forge {
+//? if forge || (neoforge && <1.20.5) {
 /*import com.mojang.brigadier.CommandDispatcher;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.RegisterCommandsEvent;
+//? if forge {
+/^import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
+^///?} else {
+import dev.utherhel.attributification.forge.network.PacketDistributor;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+//?}
 
 import static net.minecraft.commands.Commands.literal;
 

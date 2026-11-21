@@ -3,7 +3,7 @@ package dev.utherhel.attributification.gui.network;
 import dev.utherhel.attributification.Attributifaction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?}
@@ -14,15 +14,19 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  * @param fileName    the file name
  * @param jsonContent the raw JSON content
  */
-//? if >=1.21 {
+//? if >=1.20.5 {
 public record MappingFileContentPayload(String fileName, String jsonContent) implements CustomPacketPayload {
 //?} else {
 /*public record MappingFileContentPayload(String fileName, String jsonContent) {
 *///?}
 
-    //? if >=1.21 {
+    //? if >=1.20.5 {
     public static final Type<MappingFileContentPayload> ID = new Type<>(
+        //? if >=1.21 {
         ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "mapping_file_content")
+        //?} else {
+        /*new ResourceLocation(Attributifaction.MOD_ID, "mapping_file_content")
+        *///?}
     );
 
     public static final StreamCodec<FriendlyByteBuf, MappingFileContentPayload> CODEC =

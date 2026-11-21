@@ -1,5 +1,7 @@
 ### Unreleased
 - Minecraft 26.1, 26.2 and 26.3 support (Fabric and NeoForge)
+- Minecraft 1.20.2 - 1.21.11 support (Fabric: every release from 1.20; NeoForge: 1.20.3 - 1.20.6,
+  1.21.1 - 1.21.5 and 1.21.7 - 1.21.11)
 - One codebase for all Minecraft versions and loaders (Stonecutter); 1.20.1 now uses the same
   mapping engine as 1.21.1 (wildcards, excludes)
 - Architectury API is no longer required

@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui.compat;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 

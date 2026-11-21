@@ -1,11 +1,17 @@
 package dev.utherhel.attributification.forge.config;
 
-//? if forge {
+//? if forge || (neoforge && <1.20.5) {
 /*import dev.utherhel.attributification.config.AttributificationConfig;
 import dev.utherhel.attributification.config.LogLevel;
-import net.minecraftforge.common.ForgeConfigSpec;
+//? if forge {
+/^import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
+^///?} else {
+import net.neoforged.fml.ModLoadingContext;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.ModConfigSpec;
+//?}
 
 /^*
  * Forge configuration using {@link ForgeConfigSpec} (TOML).
@@ -15,10 +21,22 @@ import net.minecraftforge.fml.config.ModConfig;
  ^/
 public final class AttributificationForgeConfig implements AttributificationConfig {
 
-    private final ForgeConfigSpec.EnumValue<LogLevel> logLevelValue;
-    private final ForgeConfigSpec spec;
+    //? if forge {
+    /^private final ForgeConfigSpec.EnumValue<LogLevel> logLevelValue;
+    ^///?} else {
+    private final ModConfigSpec.EnumValue<LogLevel> logLevelValue;
+    //?}
+    //? if forge {
+    /^private final ForgeConfigSpec spec;
+    ^///?} else {
+    private final ModConfigSpec spec;
+    //?}
 
-    private AttributificationForgeConfig(ForgeConfigSpec.Builder builder) {
+    //? if forge {
+    /^private AttributificationForgeConfig(ForgeConfigSpec.Builder builder) {
+    ^///?} else {
+    private AttributificationForgeConfig(ModConfigSpec.Builder builder) {
+    //?}
         builder.comment("Debug and logging configuration").push("debug");
         this.logLevelValue = builder
             .comment("Logging level: NONE, ERRORS, WARNINGS, ALL")
@@ -28,7 +46,11 @@ public final class AttributificationForgeConfig implements AttributificationConf
     }
 
     public static AttributificationForgeConfig createAndRegister() {
-        AttributificationForgeConfig config = new AttributificationForgeConfig(new ForgeConfigSpec.Builder());
+        //? if forge {
+        /^AttributificationForgeConfig config = new AttributificationForgeConfig(new ForgeConfigSpec.Builder());
+        ^///?} else {
+        AttributificationForgeConfig config = new AttributificationForgeConfig(new ModConfigSpec.Builder());
+        //?}
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, config.spec);
         return config;
     }

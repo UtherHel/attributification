@@ -83,10 +83,13 @@ tasks {
             register("version", "mod.version")
             register("minecraft", "mod.mc_compat")
             register("loader", "mod.loader_compat")
+            register("fml", "mod.fml_compat")
             if (hasPackMcmeta) register("pack_format", "mod.pack_format")
         }
 
         filesMatching(listOf("META-INF/neoforge.mods.toml", "pack.mcmeta")) { expand(props) }
+        // NeoForge before 20.5 still reads META-INF/mods.toml
+        if (sc.current.parsed < "1.20.5") filesMatching("META-INF/neoforge.mods.toml") { name = "mods.toml" }
 
         val mixinJava = "JAVA_${requiredJava.majorVersion}"
         filesMatching("*.mixins.json") { expand("java" to mixinJava) }

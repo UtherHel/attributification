@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.util;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.Holder;
@@ -86,7 +86,11 @@ public class AttributeUtils {
         
         try {
             // Use the cached id to avoid repeated object creation
+            //? if >=1.21 {
             ResourceLocation location = identifierCache.computeIfAbsent(attributeId, ResourceLocation::parse);
+            //?} else {
+            /*ResourceLocation location = identifierCache.computeIfAbsent(attributeId, ResourceLocation::new);
+            *///?}
             //? if >=1.21.2 {
             /*return BuiltInRegistries.ATTRIBUTE.get(location).orElse(null);
             *///?} else {

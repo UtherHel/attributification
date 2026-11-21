@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge.gui;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -355,7 +355,11 @@ public final class AttributificationPayloadHandler {
 
             // Fall back to datapack resources (built-in, read-only files)
             if (content == null && currentResourceManager != null) {
+                //? if >=1.21 {
                 ResourceLocation resId = ResourceLocation.fromNamespaceAndPath(
+                //?} else {
+                /^ResourceLocation resId = new ResourceLocation(
+                ^///?}
                     MappingFileNames.namespaceOf(id),
                     MAPPINGS_DIR + "/" + MappingFileNames.fileNameOf(id)
                 );

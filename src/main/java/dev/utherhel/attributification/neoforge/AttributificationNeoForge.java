@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.neoforge.config.AttributificationNeoForgeConfig;
@@ -11,7 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
-//? if >=26.1 {
+//? if >=1.21.4 {
 /^import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 ^///?} else {
@@ -58,7 +58,7 @@ public final class AttributificationNeoForge {
      * Registers our datapack reload listener.
      * Called on server start and /reload.
      ^/
-    //? if >=26.1 {
+    //? if >=1.21.4 {
     /^@SubscribeEvent
     public void onAddReloadListener(AddServerReloadListenersEvent event) {
         event.addListener(

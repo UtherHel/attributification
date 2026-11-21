@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import dev.utherhel.attributification.gui.MappingFileNames;
 import java.util.ArrayList;
 import java.util.List;
@@ -175,7 +175,7 @@ class MappingEditorScreen extends CompatScreen {
         }
 
         void scrollToBottom() {
-            //? if >=26.1 {
+            //? if >=1.21.4 {
             /*setScrollAmount(maxScrollAmount());
             *///?} else {
             setScrollAmount(getMaxScroll());
@@ -391,7 +391,11 @@ class MappingEditorScreen extends Screen {
 
     /^* Applies the footer/list layout for the current screen size. ^/
     private void refreshPositions() {
-        entryList.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        //? if >=1.20.3 {
+        entryList.setRectangle(width, height - HEADER_HEIGHT - FOOTER_HEIGHT, 0, HEADER_HEIGHT);
+        //?} else {
+        /^entryList.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        ^///?}
         int footerWidth = mode.isOverride()
             ? FOOTER_WIDTH_OVERRIDE
             : FOOTER_WIDTH_EDIT;
@@ -441,9 +445,14 @@ class MappingEditorScreen extends Screen {
             super(
                 Minecraft.getInstance(),
                 MappingEditorScreen.this.width,
-                MappingEditorScreen.this.height,
+                //? if >=1.20.3 {
+                MappingEditorScreen.this.height - HEADER_HEIGHT - FOOTER_HEIGHT,
+                HEADER_HEIGHT,
+                //?} else {
+                /^MappingEditorScreen.this.height,
                 HEADER_HEIGHT,
                 MappingEditorScreen.this.height - FOOTER_HEIGHT,
+                ^///?}
                 28
             );
             reload();

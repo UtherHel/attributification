@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge.client.gui;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.*;
@@ -10,7 +10,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-//? if >=26.1 {
+//? if >=1.21.6 {
 /^import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 ^///?} else {
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -25,7 +25,7 @@ public final class AttributificationClientGuiSetup {
     private AttributificationClientGuiSetup() {}
 
     private static void sendToServer(CustomPacketPayload payload) {
-        //? if >=26.1 {
+        //? if >=1.21.6 {
         /^ClientPacketDistributor.sendToServer(payload);
         ^///?} else {
         PacketDistributor.sendToServer(payload);

@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge.mixin;
 
-//? if neoforge {
+//? if neoforge && >=1.21 {
 /*import com.google.common.collect.Multimap;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;

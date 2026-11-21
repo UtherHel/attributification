@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge.client;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
 public final class AttributificationNeoForgeClient {

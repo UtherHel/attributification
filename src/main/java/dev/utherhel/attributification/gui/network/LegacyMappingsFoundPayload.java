@@ -3,7 +3,7 @@ package dev.utherhel.attributification.gui.network;
 import dev.utherhel.attributification.Attributifaction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?}
@@ -14,15 +14,19 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  *
  * @param count the number of legacy mappings found (0 = none)
  */
-//? if >=1.21 {
+//? if >=1.20.5 {
 public record LegacyMappingsFoundPayload(int count) implements CustomPacketPayload {
 //?} else {
 /*public record LegacyMappingsFoundPayload(int count) {
 *///?}
 
-    //? if >=1.21 {
+    //? if >=1.20.5 {
     public static final Type<LegacyMappingsFoundPayload> ID = new Type<>(
+        //? if >=1.21 {
         ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "legacy_mappings_found")
+        //?} else {
+        /*new ResourceLocation(Attributifaction.MOD_ID, "legacy_mappings_found")
+        *///?}
     );
 
     public static final StreamCodec<FriendlyByteBuf, LegacyMappingsFoundPayload> CODEC =

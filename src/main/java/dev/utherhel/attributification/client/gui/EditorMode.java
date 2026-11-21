@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 //? if fabric {
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;

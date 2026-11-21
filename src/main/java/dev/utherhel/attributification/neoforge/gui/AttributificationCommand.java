@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge.gui;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;
 import net.minecraft.commands.CommandSourceStack;
