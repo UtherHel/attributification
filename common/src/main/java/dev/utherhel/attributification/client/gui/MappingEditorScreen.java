@@ -5,19 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.tooltip.Tooltip;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
-import net.minecraft.client.gui.widget.ElementListWidget;
-import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.narration.NarratableEntry;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 
 /**
  * Displays the list of {@link EditableMapping} entries for one file and lets
@@ -32,7 +32,7 @@ class MappingEditorScreen extends Screen {
     private final List<EditableMapping> entries;
     private final EditorMode mode;
 
-    private final ThreePartsLayoutWidget layout = new ThreePartsLayoutWidget(
+    private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(
         this,
         33,
         50
@@ -47,7 +47,7 @@ class MappingEditorScreen extends Screen {
         EditorMode mode
     ) {
         super(
-            Text.translatable(
+            Component.translatable(
                 mode.isOverride()
                     ? "gui.attributification.mappings.override.title"
                     : "gui.attributification.mappings.editor.title",
@@ -62,17 +62,17 @@ class MappingEditorScreen extends Screen {
 
     @Override
     protected void init() {
-        layout.addHeader(title, textRenderer);
+        layout.addTitleHeader(title, font);
 
-        entryList = layout.addBody(new EntryListWidget());
+        entryList = layout.addToContents(new EntryListWidget());
 
-        DirectionalLayoutWidget footer = layout.addFooter(
-            DirectionalLayoutWidget.horizontal().spacing(8)
+        LinearLayout footer = layout.addToFooter(
+            LinearLayout.horizontal().spacing(8)
         );
 
-        footer.add(
-            ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.add_mapping"),
+        footer.addChild(
+            Button.builder(
+                Component.translatable("gui.attributification.mappings.add_mapping"),
                 b -> {
                     entries.add(new EditableMapping());
                     entryList.reload();
@@ -85,9 +85,9 @@ class MappingEditorScreen extends Screen {
 
         // Saving is available in both modes; for a read-only source it writes
         // an overriding copy into the world datapack rather than editing it.
-        ButtonWidget saveButton = footer.add(
-            ButtonWidget.builder(
-                Text.translatable(
+        Button saveButton = footer.addChild(
+            Button.builder(
+                Component.translatable(
                     mode.isOverride()
                         ? "gui.attributification.mappings.save_override"
                         : "gui.attributification.mappings.save"
@@ -99,56 +99,56 @@ class MappingEditorScreen extends Screen {
         );
         if (mode.isOverride()) {
             saveButton.setTooltip(
-                Tooltip.of(
-                    Text.translatable(
+                Tooltip.create(
+                    Component.translatable(
                         "gui.attributification.mappings.override_tooltip"
                     )
                 )
             );
         }
 
-        footer.add(
-            ButtonWidget.builder(ScreenTexts.BACK, b -> close()).width(60).build()
+        footer.addChild(
+            Button.builder(CommonComponents.GUI_BACK, b -> onClose()).width(60).build()
         );
 
-        layout.forEachChild(this::addDrawableChild);
+        layout.visitWidgets(this::addRenderableWidget);
         refreshPositions();
     }
 
     @Override
-    protected void initTabNavigation() {
+    protected void repositionElements() {
         refreshPositions();
     }
 
     private void refreshPositions() {
-        layout.refreshPositions();
-        entryList.position(width, layout);
+        layout.arrangeElements();
+        entryList.updateSize(width, layout);
     }
 
     private void save() {
         String json = EditableMapping.serializeFile(entries);
         MappingsScreen.callbacks.saveFile(fileId, json);
         parent.onSaved(MappingFileNames.fileNameOf(fileId), mode);
-        close();
+        onClose();
     }
 
     @Override
-    public void close() {
-        client.setScreen(parent);
+    public void onClose() {
+        minecraft.setScreen(parent);
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     // ── Entry list ────────────────────────────────────────────────────────
 
-    private class EntryListWidget extends ElementListWidget<MappingRow> {
+    private class EntryListWidget extends ContainerObjectSelectionList<MappingRow> {
 
         EntryListWidget() {
             super(
-                MinecraftClient.getInstance(),
+                Minecraft.getInstance(),
                 MappingEditorScreen.this.width,
                 MappingEditorScreen.this.layout.getContentHeight(),
                 MappingEditorScreen.this.layout.getHeaderHeight(),
@@ -174,22 +174,22 @@ class MappingEditorScreen extends Screen {
         }
     }
 
-    private class MappingRow extends ElementListWidget.Entry<MappingRow> {
+    private class MappingRow extends ContainerObjectSelectionList.Entry<MappingRow> {
 
         private final int index;
-        private final ButtonWidget editBtn;
-        private final ButtonWidget removeBtn;
+        private final Button editBtn;
+        private final Button removeBtn;
 
         MappingRow(int index) {
             this.index = index;
-            this.editBtn = ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.edit"),
+            this.editBtn = Button.builder(
+                Component.translatable("gui.attributification.mappings.edit"),
                 b -> openEntry(index)
             )
                 .width(50)
                 .build();
-            this.removeBtn = ButtonWidget.builder(
-                Text.translatable(
+            this.removeBtn = Button.builder(
+                Component.translatable(
                     "gui.attributification.mappings.remove_mapping"
                 ),
                 b -> removeEntry(index)
@@ -202,7 +202,7 @@ class MappingEditorScreen extends Screen {
 
         @Override
         public void render(
-            DrawContext context,
+            GuiGraphics context,
             int idx,
             int y,
             int x,
@@ -216,9 +216,9 @@ class MappingEditorScreen extends Screen {
             int mid = y + (entryHeight - 9) / 2;
 
             // Entry number badge
-            context.drawTextWithShadow(
-                MappingEditorScreen.this.textRenderer,
-                Text.literal("#" + (index + 1)).formatted(Formatting.DARK_GRAY),
+            context.drawString(
+                MappingEditorScreen.this.font,
+                Component.literal("#" + (index + 1)).withStyle(ChatFormatting.DARK_GRAY),
                 x + 2,
                 mid,
                 0xFFFFFFFF
@@ -229,8 +229,8 @@ class MappingEditorScreen extends Screen {
             int summaryMaxX = x + entryWidth - 108;
             if (summaryMaxX > summaryX) {
                 context.enableScissor(summaryX, y, summaryMaxX, y + entryHeight);
-                context.drawTextWithShadow(
-                    MappingEditorScreen.this.textRenderer,
+                context.drawString(
+                    MappingEditorScreen.this.font,
                     entries.get(index).summary(),
                     summaryX,
                     mid,
@@ -251,18 +251,18 @@ class MappingEditorScreen extends Screen {
         }
 
         @Override
-        public List<? extends Element> children() {
+        public List<? extends GuiEventListener> children() {
             return List.of(editBtn, removeBtn);
         }
 
         @Override
-        public List<? extends Selectable> selectableChildren() {
+        public List<? extends NarratableEntry> narratables() {
             return List.of(editBtn, removeBtn);
         }
     }
 
     private void openEntry(int index) {
-        client.setScreen(
+        minecraft.setScreen(
             new MappingEntryScreen(this, entries.get(index), true)
         );
     }

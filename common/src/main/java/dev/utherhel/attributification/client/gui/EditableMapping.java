@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 /**
  * Mutable client-side model of a single mapping entry, plus (de)serialization
@@ -42,14 +42,14 @@ final class EditableMapping {
             this.id = id;
         }
 
-        Text label() {
-            return Text.translatable(
+        Component label() {
+            return Component.translatable(
                 "gui.attributification.mappings.mode." + id
             );
         }
 
-        Text description() {
-            return Text.translatable(
+        Component description() {
+            return Component.translatable(
                 "gui.attributification.mappings.mode." + id + ".desc"
             );
         }
@@ -67,8 +67,8 @@ final class EditableMapping {
         ADDITION_TO_MULTIPLY_BASE,
         ADDITION_TO_MULTIPLY_TOTAL;
 
-        Text label() {
-            return Text.translatable(
+        Component label() {
+            return Component.translatable(
                 "gui.attributification.mappings.op." + name()
             );
         }
@@ -101,28 +101,28 @@ final class EditableMapping {
     // ── Display ───────────────────────────────────────────────────────────
 
     /** {@code source → target}, with placeholders for not-yet-filled slots. */
-    Text summary() {
-        Text src = describe(sources);
-        Text dst = describe(targets);
-        return Text.empty()
+    Component summary() {
+        Component src = describe(sources);
+        Component dst = describe(targets);
+        return Component.empty()
             .append(src)
-            .append(Text.literal(" → ").formatted(Formatting.DARK_GRAY))
+            .append(Component.literal(" → ").withStyle(ChatFormatting.DARK_GRAY))
             .append(dst);
     }
 
-    private static Text describe(List<String> values) {
+    private static Component describe(List<String> values) {
         List<String> filled = clean(values);
         if (filled.isEmpty()) {
-            return Text.translatable(
+            return Component.translatable(
                 "gui.attributification.mappings.unset"
-            ).formatted(Formatting.RED);
+            ).withStyle(ChatFormatting.RED);
         }
-        Text first = Text.literal(shortId(filled.get(0)));
+        Component first = Component.literal(shortId(filled.get(0)));
         if (filled.size() == 1) return first;
         return first.copy()
             .append(
-                Text.literal(" +" + (filled.size() - 1)).formatted(
-                    Formatting.GRAY
+                Component.literal(" +" + (filled.size() - 1)).withStyle(
+                    ChatFormatting.GRAY
                 )
             );
     }

@@ -1,12 +1,11 @@
 package dev.utherhel.attributification.util;
 
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.util.Identifier;
-
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 
 /**
  * Utility class for common attribute operations used across mixins.
@@ -18,11 +17,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AttributeUtils {
     
     // Cache for Identifier objects to avoid repeated creation
-    private static final ConcurrentHashMap<String, Identifier> identifierCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, ResourceLocation> identifierCache = new ConcurrentHashMap<>();
     
     // Shared cache for RegistryEntry<EntityAttribute> -> String ID mapping (used by all mixins)
     // This avoids repeated registry lookups in hot paths
-    private static final ConcurrentHashMap<RegistryEntry<EntityAttribute>, String> attributeIdCache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Holder<Attribute>, String> attributeIdCache = new ConcurrentHashMap<>();
     
     // Private constructor to prevent instantiation
     private AttributeUtils() {
@@ -39,13 +38,13 @@ public class AttributeUtils {
      * @param attribute The attribute registry entry to get the ID for
      * @return The string ID of the attribute, or null if not registered
      */
-    public static String getAttributeId(RegistryEntry<EntityAttribute> attribute) {
+    public static String getAttributeId(Holder<Attribute> attribute) {
         if (attribute == null) {
             return null;
         }
         
         return attributeIdCache.computeIfAbsent(attribute, attr -> 
-            attr.getKey().map(key -> key.getValue().toString()).orElse(null)
+            attr.unwrapKey().map(key -> key.location().toString()).orElse(null)
         );
     }
     
@@ -56,13 +55,13 @@ public class AttributeUtils {
      * @param attribute The attribute to get the ID for
      * @return The string ID of the attribute, or null if not registered
      */
-    public static String getAttributeIdDirect(EntityAttribute attribute) {
+    public static String getAttributeIdDirect(Attribute attribute) {
         if (attribute == null) {
             return null;
         }
         
         // Get ID directly from registry
-        Identifier id = Registries.ATTRIBUTE.getId(attribute);
+        ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attribute);
         return id != null ? id.toString() : null;
     }
     
@@ -73,15 +72,15 @@ public class AttributeUtils {
      * @param attributeId The string ID of the attribute
      * @return The RegistryEntry<EntityAttribute>, or null if not found
      */
-    public static RegistryEntry<EntityAttribute> getAttributeByName(String attributeId) {
+    public static Holder<Attribute> getAttributeByName(String attributeId) {
         if (attributeId == null || attributeId.isEmpty()) {
             return null;
         }
         
         try {
             // Use cached Identifier to avoid repeated object creation
-            Identifier location = identifierCache.computeIfAbsent(attributeId, Identifier::of);
-            return Registries.ATTRIBUTE.getEntry(location).orElse(null);
+            ResourceLocation location = identifierCache.computeIfAbsent(attributeId, ResourceLocation::parse);
+            return BuiltInRegistries.ATTRIBUTE.getHolder(location).orElse(null);
         } catch (Exception e) {
             return null;
         }
@@ -99,13 +98,13 @@ public class AttributeUtils {
      * @param attributeIds List of attribute IDs to try
      * @return First available attribute, or null if none found
      */
-    public static RegistryEntry<EntityAttribute> getFirstAvailableAttribute(List<String> attributeIds) {
+    public static Holder<Attribute> getFirstAvailableAttribute(List<String> attributeIds) {
         if (attributeIds == null || attributeIds.isEmpty()) {
             return null;
         }
         
         for (String attributeId : attributeIds) {
-            RegistryEntry<EntityAttribute> attribute = getAttributeByName(attributeId);
+            Holder<Attribute> attribute = getAttributeByName(attributeId);
             if (attribute != null) {
                 return attribute;
             }
@@ -120,7 +119,7 @@ public class AttributeUtils {
      * @param entry The registry entry
      * @return The EntityAttribute value, or null if entry is null
      */
-    public static EntityAttribute getValue(RegistryEntry<EntityAttribute> entry) {
+    public static Attribute getValue(Holder<Attribute> entry) {
         return entry != null ? entry.value() : null;
     }
     

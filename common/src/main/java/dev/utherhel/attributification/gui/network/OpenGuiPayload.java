@@ -1,25 +1,25 @@
 package dev.utherhel.attributification.gui.network;
 
 import dev.utherhel.attributification.Attributifaction;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Server → Client: signals the client to open the Attributification mappings GUI.
  */
-public record OpenGuiPayload() implements CustomPayload {
+public record OpenGuiPayload() implements CustomPacketPayload {
 
-    public static final Id<OpenGuiPayload> ID = new Id<>(
-        Identifier.of(Attributifaction.MOD_ID, "open_gui")
+    public static final Type<OpenGuiPayload> ID = new Type<>(
+        ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "open_gui")
     );
 
-    public static final PacketCodec<PacketByteBuf, OpenGuiPayload> CODEC =
-        PacketCodec.unit(new OpenGuiPayload());
+    public static final StreamCodec<FriendlyByteBuf, OpenGuiPayload> CODEC =
+        StreamCodec.unit(new OpenGuiPayload());
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

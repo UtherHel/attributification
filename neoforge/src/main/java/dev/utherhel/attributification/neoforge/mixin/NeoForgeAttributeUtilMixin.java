@@ -8,11 +8,11 @@ import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.text.Text;
+import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.util.AttributeTooltipContext;
 import net.neoforged.neoforge.common.util.AttributeUtil;
 import org.spongepowered.asm.mixin.Mixin;
@@ -44,8 +44,8 @@ public class NeoForgeAttributeUtilMixin {
     @WrapMethod(method = "applyTextFor")
     private static void wrapApplyTextFor(
             ItemStack stack,
-            Consumer<Text> tooltip,
-            Multimap<RegistryEntry<EntityAttribute>, EntityAttributeModifier> modifierMap,
+            Consumer<Component> tooltip,
+            Multimap<Holder<Attribute>, AttributeModifier> modifierMap,
             AttributeTooltipContext ctx,
             Operation<Void> original
     ) {
@@ -63,12 +63,12 @@ public class NeoForgeAttributeUtilMixin {
             }
 
             // Collect conversions: original entries that need to be removed + new entries to add
-            List<Map.Entry<RegistryEntry<EntityAttribute>, EntityAttributeModifier>> toRemove = new ArrayList<>();
-            List<Map.Entry<RegistryEntry<EntityAttribute>, EntityAttributeModifier>> toAdd = new ArrayList<>();
+            List<Map.Entry<Holder<Attribute>, AttributeModifier>> toRemove = new ArrayList<>();
+            List<Map.Entry<Holder<Attribute>, AttributeModifier>> toAdd = new ArrayList<>();
 
-            for (Map.Entry<RegistryEntry<EntityAttribute>, EntityAttributeModifier> entry : modifierMap.entries()) {
-                RegistryEntry<EntityAttribute> attribute = entry.getKey();
-                EntityAttributeModifier modifier = entry.getValue();
+            for (Map.Entry<Holder<Attribute>, AttributeModifier> entry : modifierMap.entries()) {
+                Holder<Attribute> attribute = entry.getKey();
+                AttributeModifier modifier = entry.getValue();
 
                 String sourceId = AttributeUtils.getAttributeId(attribute);
                 if (sourceId == null || !unifier.shouldUnify(sourceId)) continue;
@@ -76,7 +76,7 @@ public class NeoForgeAttributeUtilMixin {
                 AttributeMappingEntry mapping = unifier.getMapping(sourceId);
                 if (mapping == null) continue;
 
-                RegistryEntry<EntityAttribute> targetAttr = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
+                Holder<Attribute> targetAttr = AttributeUtils.getFirstAvailableAttribute(mapping.getTargetAttributes());
                 if (targetAttr == null) continue;
 
                 if (mapping.isOnlyVisualChange()) {
@@ -88,20 +88,20 @@ public class NeoForgeAttributeUtilMixin {
                 }
 
                 // Convert modifier value and operation
-                EntityAttributeModifier convertedModifier = convertModifier(modifier, mapping);
+                AttributeModifier convertedModifier = convertModifier(modifier, mapping);
                 toRemove.add(entry);
                 toAdd.add(Map.entry(targetAttr, convertedModifier));
                 AttributificationLogger.info("[NeoForgeTooltip] Converted: " + sourceId + " -> " +
-                    AttributeUtils.getAttributeId(targetAttr) + ", value: " + modifier.value() + " -> " + convertedModifier.value());
+                    AttributeUtils.getAttributeId(targetAttr) + ", value: " + modifier.amount() + " -> " + convertedModifier.amount());
             }
 
             // Apply removals
-            for (Map.Entry<RegistryEntry<EntityAttribute>, EntityAttributeModifier> entry : toRemove) {
+            for (Map.Entry<Holder<Attribute>, AttributeModifier> entry : toRemove) {
                 modifierMap.remove(entry.getKey(), entry.getValue());
             }
 
             // Apply additions
-            for (Map.Entry<RegistryEntry<EntityAttribute>, EntityAttributeModifier> entry : toAdd) {
+            for (Map.Entry<Holder<Attribute>, AttributeModifier> entry : toAdd) {
                 modifierMap.put(entry.getKey(), entry.getValue());
             }
 
@@ -116,23 +116,23 @@ public class NeoForgeAttributeUtilMixin {
      * Converts a modifier value and operation according to mapping settings.
      */
     @Unique
-    private static EntityAttributeModifier convertModifier(EntityAttributeModifier modifier, AttributeMappingEntry mapping) {
-        EntityAttributeModifier.Operation op = modifier.operation();
-        double value = modifier.value();
+    private static AttributeModifier convertModifier(AttributeModifier modifier, AttributeMappingEntry mapping) {
+        AttributeModifier.Operation op = modifier.operation();
+        double value = modifier.amount();
 
         // Convert value (only for ADD_VALUE)
-        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
+        if (op == AttributeModifier.Operation.ADD_VALUE) {
             value = value / mapping.getConversionEquivalence();
         }
 
         // Convert operation
-        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
+        if (op == AttributeModifier.Operation.ADD_VALUE) {
             switch (mapping.getOperationConversionType()) {
                 case ADDITION_TO_MULTIPLY_BASE:
-                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+                    op = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
                     break;
                 case ADDITION_TO_MULTIPLY_TOTAL:
-                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                    op = AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
                     break;
                 case DEFAULT:
                 default:
@@ -140,7 +140,7 @@ public class NeoForgeAttributeUtilMixin {
             }
         }
 
-        return new EntityAttributeModifier(
+        return new AttributeModifier(
             modifier.id(),
             value,
             op

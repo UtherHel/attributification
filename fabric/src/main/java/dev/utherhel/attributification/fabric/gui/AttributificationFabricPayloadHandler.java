@@ -32,16 +32,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.SharedConstants;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class AttributificationFabricPayloadHandler {
 
@@ -105,7 +105,7 @@ public final class AttributificationFabricPayloadHandler {
                     if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
                         return;
                     }
-                    ServerPlayerEntity player = context.player();
+                    ServerPlayer player = context.player();
                     MappingFilesListPayload response = buildFileList(
                         context.server(),
                         currentResourceManager
@@ -122,7 +122,7 @@ public final class AttributificationFabricPayloadHandler {
                     if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
                         return;
                     }
-                    ServerPlayerEntity player = context.player();
+                    ServerPlayer player = context.player();
                     handleRequestFileContent(
                         player,
                         payload,
@@ -163,11 +163,11 @@ public final class AttributificationFabricPayloadHandler {
                     if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
                         return;
                     }
-                    ServerPlayerEntity player = context.player();
+                    ServerPlayer player = context.player();
                     List<String> attrs =
-                        net.minecraft.registry.Registries.ATTRIBUTE.getIds()
+                        net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.keySet()
                             .stream()
-                            .map(net.minecraft.util.Identifier::toString)
+                            .map(net.minecraft.resources.ResourceLocation::toString)
                             .sorted()
                             .toList();
                     ServerPlayNetworking.send(
@@ -197,7 +197,7 @@ public final class AttributificationFabricPayloadHandler {
                     if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(context.player())) {
                         return;
                     }
-                    ServerPlayerEntity player = context.player();
+                    ServerPlayer player = context.player();
                     MinecraftServer server = context.server();
                     Path configDir =
                         net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir();
@@ -264,11 +264,11 @@ public final class AttributificationFabricPayloadHandler {
 
         // Built-in datapack resources — read-only, can be overridden.
         if (resourceManager != null) {
-            Map<Identifier, Resource> resources = resourceManager.findResources(
+            Map<ResourceLocation, Resource> resources = resourceManager.listResources(
                 MappingFileNames.MAPPINGS_DIR,
                 id -> id.getPath().endsWith(".json")
             );
-            for (Identifier resourceId : resources.keySet()) {
+            for (ResourceLocation resourceId : resources.keySet()) {
                 String id = MappingFileNames.id(
                     resourceId.getNamespace(),
                     resourceId
@@ -286,7 +286,7 @@ public final class AttributificationFabricPayloadHandler {
     }
 
     private static void handleRequestFileContent(
-        ServerPlayerEntity player,
+        ServerPlayer player,
         RequestMappingFileContentPayload payload,
         ResourceManager resourceManager
     ) {
@@ -320,7 +320,7 @@ public final class AttributificationFabricPayloadHandler {
         }
 
         // Fall back to datapack resources (built-in, read-only files)
-        Identifier resourceId = Identifier.of(
+        ResourceLocation resourceId = ResourceLocation.fromNamespaceAndPath(
             MappingFileNames.namespaceOf(id),
             MappingFileNames.MAPPINGS_DIR +
                 "/" +
@@ -332,7 +332,7 @@ public final class AttributificationFabricPayloadHandler {
         if (resource != null) {
             try (
                 Reader reader = new java.io.InputStreamReader(
-                    resource.getInputStream(),
+                    resource.open(),
                     StandardCharsets.UTF_8
                 )
             ) {
@@ -426,7 +426,7 @@ public final class AttributificationFabricPayloadHandler {
      */
     private static Path getWorldDatapackRoot(MinecraftServer server) {
         return server
-            .getSavePath(net.minecraft.util.WorldSavePath.ROOT)
+            .getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
             .resolve("datapacks/attributification_gui");
     }
 
@@ -494,8 +494,8 @@ public final class AttributificationFabricPayloadHandler {
         pack.addProperty("description", "Attributification GUI mappings");
         pack.addProperty(
             "pack_format",
-            SharedConstants.getGameVersion()
-                .getResourceVersion(ResourceType.SERVER_DATA)
+            SharedConstants.getCurrentVersion()
+                .getPackVersion(PackType.SERVER_DATA)
         );
         JsonObject root = new JsonObject();
         root.add("pack", pack);

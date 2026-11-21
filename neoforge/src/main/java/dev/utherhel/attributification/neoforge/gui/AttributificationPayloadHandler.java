@@ -10,10 +10,6 @@ import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.config.LegacyMappingConverter;
 import dev.utherhel.attributification.gui.MappingFileNames;
 import dev.utherhel.attributification.gui.network.*;
-import dev.utherhel.attributification.gui.network.AttributesListPayload;
-import dev.utherhel.attributification.gui.network.ConvertLegacyMappingsPayload;
-import dev.utherhel.attributification.gui.network.LegacyMappingsFoundPayload;
-import dev.utherhel.attributification.gui.network.RequestAttributesListPayload;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -25,19 +21,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.minecraft.SharedConstants;
-import net.minecraft.registry.Registries;
-import net.minecraft.resource.Resource;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.WorldSavePath;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
  * Server-side handler for Attributification GUI network payloads.
@@ -182,7 +179,7 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+            if (!(context.player() instanceof ServerPlayer gateSender)
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
@@ -218,9 +215,9 @@ public final class AttributificationPayloadHandler {
                 }
 
                 // Notify player
-                if (context.player() instanceof ServerPlayerEntity player) {
-                    player.sendMessage(
-                        Text.literal(
+                if (context.player() instanceof ServerPlayer player) {
+                    player.displayClientMessage(
+                        Component.literal(
                             "Converted " +
                                 count +
                                 " legacy mappings to new format"
@@ -243,7 +240,7 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+            if (!(context.player() instanceof ServerPlayer gateSender)
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
@@ -263,11 +260,11 @@ public final class AttributificationPayloadHandler {
             }
 
             // Built-in datapack resources — read-only, can be overridden.
-            Map<Identifier, Resource> resources = rm.findResources(
+            Map<ResourceLocation, Resource> resources = rm.listResources(
                 MAPPINGS_DIR,
                 id -> id.getPath().endsWith(".json")
             );
-            for (Identifier resourceId : resources.keySet()) {
+            for (ResourceLocation resourceId : resources.keySet()) {
                 // resourceId = "namespace:attributification/mappings/name.json"
                 String id = MappingFileNames.id(
                     resourceId.getNamespace(),
@@ -293,14 +290,14 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+            if (!(context.player() instanceof ServerPlayer gateSender)
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
             List<String> attrs =
-                net.minecraft.registry.Registries.ATTRIBUTE.getIds()
+                net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.keySet()
                     .stream()
-                    .map(net.minecraft.util.Identifier::toString)
+                    .map(net.minecraft.resources.ResourceLocation::toString)
                     .sorted()
                     .toList();
             context.reply(new AttributesListPayload(attrs));
@@ -323,7 +320,7 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+            if (!(context.player() instanceof ServerPlayer gateSender)
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
@@ -357,7 +354,7 @@ public final class AttributificationPayloadHandler {
 
             // Fall back to datapack resources (built-in, read-only files)
             if (content == null && currentResourceManager != null) {
-                Identifier resId = Identifier.of(
+                ResourceLocation resId = ResourceLocation.fromNamespaceAndPath(
                     MappingFileNames.namespaceOf(id),
                     MAPPINGS_DIR + "/" + MappingFileNames.fileNameOf(id)
                 );
@@ -366,7 +363,7 @@ public final class AttributificationPayloadHandler {
                         .getResource(resId)
                         .orElse(null);
                     if (res != null) {
-                        try (Reader reader = res.getReader()) {
+                        try (Reader reader = res.openAsReader()) {
                             StringBuilder sb = new StringBuilder();
                             char[] buf = new char[4096];
                             int len;
@@ -407,7 +404,7 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+            if (!(context.player() instanceof ServerPlayer gateSender)
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
@@ -419,9 +416,9 @@ public final class AttributificationPayloadHandler {
                 AttributificationLogger.warn(
                     "Rejected mapping file id: " + payload.fileName()
                 );
-                if (context.player() instanceof ServerPlayerEntity player) {
-                    player.sendMessage(
-                        Text.translatable(
+                if (context.player() instanceof ServerPlayer player) {
+                    player.displayClientMessage(
+                        Component.translatable(
                             "command.attributification.gui.invalid_name",
                             String.valueOf(payload.fileName())
                         ),
@@ -455,9 +452,9 @@ public final class AttributificationPayloadHandler {
                 }
 
                 // Notify the player
-                if (context.player() instanceof ServerPlayerEntity player) {
-                    player.sendMessage(
-                        Text.translatable(
+                if (context.player() instanceof ServerPlayer player) {
+                    player.displayClientMessage(
+                        Component.translatable(
                             "command.attributification.gui.saved",
                             id
                         ),
@@ -479,7 +476,7 @@ public final class AttributificationPayloadHandler {
         final IPayloadContext context
     ) {
         context.enqueueWork(() -> {
-            if (!(context.player() instanceof ServerPlayerEntity gateSender)
+            if (!(context.player() instanceof ServerPlayer gateSender)
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
@@ -507,9 +504,9 @@ public final class AttributificationPayloadHandler {
                     }
 
                     // Notify the player
-                    if (context.player() instanceof ServerPlayerEntity player) {
-                        player.sendMessage(
-                            Text.translatable(
+                    if (context.player() instanceof ServerPlayer player) {
+                        player.displayClientMessage(
+                            Component.translatable(
                                 "command.attributification.gui.deleted",
                                 id
                             ),
@@ -537,7 +534,7 @@ public final class AttributificationPayloadHandler {
      */
     private static Path getWorldDatapackRoot(MinecraftServer server) {
         return server
-            .getSavePath(WorldSavePath.ROOT)
+            .getWorldPath(LevelResource.ROOT)
             .resolve("datapacks/" + GUI_DATAPACK_NAME);
     }
 
@@ -603,7 +600,7 @@ public final class AttributificationPayloadHandler {
         pack.addProperty("description", "Attributification GUI mappings");
         pack.addProperty(
             "pack_format",
-            SharedConstants.getGameVersion().getResourceVersion(ResourceType.SERVER_DATA)
+            SharedConstants.getCurrentVersion().getPackVersion(PackType.SERVER_DATA)
         );
         JsonObject root = new JsonObject();
         root.add("pack", pack);

@@ -4,7 +4,7 @@ import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.neoforge.config.AttributificationNeoForgeConfig;
 import dev.utherhel.attributification.neoforge.gui.AttributificationPayloadHandler;
-import net.minecraft.resource.SynchronousResourceReloader;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -54,6 +54,6 @@ public final class AttributificationNeoForge {
      */
     @SubscribeEvent
     public void onAddReloadListener(AddReloadListenerEvent event) {
-        event.addListener((SynchronousResourceReloader) MappingLoader::load);
+        event.addListener((ResourceManagerReloadListener) MappingLoader::load);
     }
 }

@@ -2,15 +2,15 @@ package dev.utherhel.attributification.neoforge.gui;
 
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.literal;
 
 /**
  * Registers the {@code /attributification gui} command on the NeoForge server.
@@ -28,18 +28,18 @@ public final class AttributificationCommand {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
                 literal("attributification")
-                        .requires(source -> source.hasPermissionLevel(2))
+                        .requires(source -> source.hasPermission(2))
                         .then(literal("gui")
                                 .executes(ctx -> {
-                                    ServerCommandSource source = ctx.getSource();
-                                    if (source.getEntity() instanceof ServerPlayerEntity player) {
+                                    CommandSourceStack source = ctx.getSource();
+                                    if (source.getEntity() instanceof ServerPlayer player) {
                                         PacketDistributor.sendToPlayer(player, new OpenGuiPayload());
-                                        source.sendFeedback(
-                                                () -> Text.translatable("command.attributification.gui.opening"),
+                                        source.sendSuccess(
+                                                () -> Component.translatable("command.attributification.gui.opening"),
                                                 false
                                         );
                                     } else {
-                                        source.sendError(Text.translatable("command.attributification.gui.player_only"));
+                                        source.sendFailure(Component.translatable("command.attributification.gui.player_only"));
                                     }
                                     return 1;
                                 })

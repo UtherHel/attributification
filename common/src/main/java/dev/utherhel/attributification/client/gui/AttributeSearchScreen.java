@@ -6,18 +6,18 @@ import java.util.List;
 import java.util.function.Consumer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.DirectionalLayoutWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.ThreePartsLayoutWidget;
-import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 
 /**
  * Searchable picker for a registered attribute ID.
@@ -32,15 +32,15 @@ class AttributeSearchScreen extends Screen {
     private final Consumer<String> onSelect;
     private final List<String> allAttributes;
 
-    private final ThreePartsLayoutWidget layout = new ThreePartsLayoutWidget(
+    private final HeaderAndFooterLayout layout = new HeaderAndFooterLayout(
         this,
         58,
         40
     );
 
-    private TextFieldWidget searchField;
+    private EditBox searchField;
     private ResultList results;
-    private ButtonWidget selectButton;
+    private Button selectButton;
 
     AttributeSearchScreen(
         Screen parent,
@@ -48,7 +48,7 @@ class AttributeSearchScreen extends Screen {
         Consumer<String> onSelect
     ) {
         super(
-            Text.translatable("gui.attributification.mappings.attribute_search")
+            Component.translatable("gui.attributification.mappings.attribute_search")
         );
         this.parent = parent;
         this.onSelect = onSelect;
@@ -60,50 +60,50 @@ class AttributeSearchScreen extends Screen {
 
     @Override
     protected void init() {
-        layout.addHeader(title, textRenderer);
+        layout.addTitleHeader(title, font);
 
-        searchField = new TextFieldWidget(
-            textRenderer,
+        searchField = new EditBox(
+            font,
             0,
             0,
             220,
             20,
-            Text.translatable("gui.attributification.mappings.attribute_search")
+            Component.translatable("gui.attributification.mappings.attribute_search")
         );
         searchField.setMaxLength(256);
-        searchField.setPlaceholder(
-            Text.translatable(
+        searchField.setHint(
+            Component.translatable(
                 "gui.attributification.mappings.attribute_search"
-            ).formatted(Formatting.DARK_GRAY)
+            ).withStyle(ChatFormatting.DARK_GRAY)
         );
-        searchField.setChangedListener(query -> results.filter(query));
+        searchField.setResponder(query -> results.filter(query));
 
-        results = layout.addBody(new ResultList());
+        results = layout.addToContents(new ResultList());
 
-        DirectionalLayoutWidget footer = layout.addFooter(
-            DirectionalLayoutWidget.horizontal().spacing(8)
+        LinearLayout footer = layout.addToFooter(
+            LinearLayout.horizontal().spacing(8)
         );
-        selectButton = footer.add(
-            ButtonWidget.builder(
-                Text.translatable("gui.attributification.mappings.select"),
+        selectButton = footer.addChild(
+            Button.builder(
+                Component.translatable("gui.attributification.mappings.select"),
                 b -> confirmSelection()
             )
                 .width(100)
                 .build()
         );
-        footer.add(
-            ButtonWidget.builder(ScreenTexts.CANCEL, b -> close())
+        footer.addChild(
+            Button.builder(CommonComponents.GUI_CANCEL, b -> onClose())
                 .width(100)
                 .build()
         );
 
-        layout.forEachChild(this::addDrawableChild);
+        layout.visitWidgets(this::addRenderableWidget);
         // The search field sits in the header area, positioned manually below
         // the title so it never overlaps the heading text.
-        addDrawableChild(searchField);
+        addRenderableWidget(searchField);
 
         refreshPositions();
-        results.filter(searchField.getText());
+        results.filter(searchField.getValue());
         setInitialFocus(searchField);
 
         if (allAttributes.isEmpty()) {
@@ -112,13 +112,13 @@ class AttributeSearchScreen extends Screen {
     }
 
     @Override
-    protected void initTabNavigation() {
+    protected void repositionElements() {
         refreshPositions();
     }
 
     private void refreshPositions() {
-        layout.refreshPositions();
-        results.position(width, layout);
+        layout.arrangeElements();
+        results.updateSize(width, layout);
         searchField.setPosition(width / 2 - 110, 30);
         refreshButtons();
     }
@@ -126,33 +126,33 @@ class AttributeSearchScreen extends Screen {
     private void refreshButtons() {
         if (selectButton != null) {
             selectButton.active = results != null &&
-            results.getSelectedOrNull() != null;
+            results.getSelected() != null;
         }
     }
 
     // ── Selection ─────────────────────────────────────────────────────────
 
     private void confirmSelection() {
-        ResultEntry entry = results.getSelectedOrNull();
+        ResultEntry entry = results.getSelected();
         if (entry == null) return;
         onSelect.accept(entry.id);
-        close();
+        onClose();
     }
 
     @Override
-    public void close() {
-        client.setScreen(parent);
+    public void onClose() {
+        minecraft.setScreen(parent);
     }
 
     @Override
-    public boolean shouldPause() {
+    public boolean isPauseScreen() {
         return false;
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         // Enter confirms the highlighted result.
-        if ((keyCode == 257 || keyCode == 335) && results.getSelectedOrNull() != null) {
+        if ((keyCode == 257 || keyCode == 335) && results.getSelected() != null) {
             confirmSelection();
             return true;
         }
@@ -160,23 +160,23 @@ class AttributeSearchScreen extends Screen {
     }
 
     @Override
-    public void render(DrawContext ctx, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
         super.render(ctx, mouseX, mouseY, delta);
 
         if (allAttributes.isEmpty()) {
-            ctx.drawCenteredTextWithShadow(
-                textRenderer,
-                Text.translatable(
+            ctx.drawCenteredString(
+                font,
+                Component.translatable(
                     "gui.attributification.mappings.status.no_attributes"
                 ),
                 width / 2,
                 layout.getHeaderHeight() + 20,
                 0xFFFF5555
             );
-        } else if (results.getEntryCount() == 0) {
-            ctx.drawCenteredTextWithShadow(
-                textRenderer,
-                Text.translatable(
+        } else if (results.getItemCount() == 0) {
+            ctx.drawCenteredString(
+                font,
+                Component.translatable(
                     "gui.attributification.mappings.no_matches"
                 ),
                 width / 2,
@@ -189,11 +189,11 @@ class AttributeSearchScreen extends Screen {
     // ── Result list ───────────────────────────────────────────────────────
 
     private class ResultList
-        extends AlwaysSelectedEntryListWidget<ResultEntry> {
+        extends ObjectSelectionList<ResultEntry> {
 
         ResultList() {
             super(
-                MinecraftClient.getInstance(),
+                Minecraft.getInstance(),
                 AttributeSearchScreen.this.width,
                 AttributeSearchScreen.this.layout.getContentHeight(),
                 AttributeSearchScreen.this.layout.getHeaderHeight(),
@@ -232,8 +232,8 @@ class AttributeSearchScreen extends Screen {
         }
 
         @Override
-        public int getEntryCount() {
-            return super.getEntryCount();
+        public int getItemCount() {
+            return super.getItemCount();
         }
 
         @Override
@@ -244,7 +244,7 @@ class AttributeSearchScreen extends Screen {
     }
 
     private class ResultEntry
-        extends AlwaysSelectedEntryListWidget.Entry<ResultEntry> {
+        extends ObjectSelectionList.Entry<ResultEntry> {
 
         private final String id;
         private long lastClickTime;
@@ -254,13 +254,13 @@ class AttributeSearchScreen extends Screen {
         }
 
         @Override
-        public Text getNarration() {
-            return Text.literal(id);
+        public Component getNarration() {
+            return Component.literal(id);
         }
 
         @Override
         public void render(
-            DrawContext ctx,
+            GuiGraphics ctx,
             int index,
             int y,
             int x,
@@ -271,9 +271,9 @@ class AttributeSearchScreen extends Screen {
             boolean hovered,
             float delta
         ) {
-            ctx.drawTextWithShadow(
-                textRenderer,
-                Text.literal(id),
+            ctx.drawString(
+                font,
+                Component.literal(id),
                 x + 3,
                 y + (entryHeight - 9) / 2,
                 hovered ? 0xFFFFFFA0 : 0xFFFFFFFF
@@ -283,7 +283,7 @@ class AttributeSearchScreen extends Screen {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             results.setSelected(this);
-            long now = Util.getMeasuringTimeMs();
+            long now = Util.getMillis();
             if (now - lastClickTime < 250L) {
                 confirmSelection();
             }

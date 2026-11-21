@@ -3,9 +3,9 @@ package dev.utherhel.attributification.config;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.Attribute;
 
 /**
  * Provides utility methods for attribute ID lookups and suggestions.
@@ -44,11 +44,11 @@ public final class AttributeSuggestions {
      */
     public static boolean isValidSingleAttribute(String id) {
         try {
-            Identifier identifier = Identifier.tryParse(id);
+            ResourceLocation identifier = ResourceLocation.tryParse(id);
             if (identifier == null) {
                 return false;
             }
-            return Registries.ATTRIBUTE.containsId(identifier);
+            return BuiltInRegistries.ATTRIBUTE.containsKey(identifier);
         } catch (Exception e) {
             return false;
         }
@@ -62,8 +62,8 @@ public final class AttributeSuggestions {
         Map<String, List<String>> attributesByName = new LinkedHashMap<>();
 
         // Collect all attributes grouped by name
-        for (EntityAttribute attribute : Registries.ATTRIBUTE) {
-            Identifier id = Registries.ATTRIBUTE.getId(attribute);
+        for (Attribute attribute : BuiltInRegistries.ATTRIBUTE) {
+            ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attribute);
             if (id != null) {
                 String fullId = id.toString();
                 String name = id.getPath();
@@ -91,8 +91,8 @@ public final class AttributeSuggestions {
     public static Map<String, List<String>> getAttributesByNamespace() {
         Map<String, List<String>> byNamespace = new LinkedHashMap<>();
 
-        for (EntityAttribute attribute : Registries.ATTRIBUTE) {
-            Identifier id = Registries.ATTRIBUTE.getId(attribute);
+        for (Attribute attribute : BuiltInRegistries.ATTRIBUTE) {
+            ResourceLocation id = BuiltInRegistries.ATTRIBUTE.getKey(attribute);
             if (id != null) {
                 String namespace = id.getNamespace();
                 byNamespace

@@ -6,9 +6,9 @@ import dev.utherhel.attributification.fabric.config.AttributificationFabricConfi
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.resources.ResourceManager;
 
 public final class AttributificationFabric implements ModInitializer {
 
@@ -29,16 +29,16 @@ public final class AttributificationFabric implements ModInitializer {
         // Register datapack reload listener for attribute mappings
         // This reads data/<namespace>/attributification/mappings/*.json
         ResourceManagerHelper.get(
-            ResourceType.SERVER_DATA
+            PackType.SERVER_DATA
         ).registerReloadListener(
             new SimpleSynchronousResourceReloadListener() {
                 @Override
-                public Identifier getFabricId() {
-                    return Identifier.of(Attributifaction.MOD_ID, "mappings");
+                public ResourceLocation getFabricId() {
+                    return ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "mappings");
                 }
 
                 @Override
-                public void reload(ResourceManager manager) {
+                public void onResourceManagerReload(ResourceManager manager) {
                     MappingLoader.load(manager);
                     // Capture ResourceManager for GUI file operations
                     dev.utherhel.attributification.fabric.gui.AttributificationFabricPayloadHandler.setResourceManager(

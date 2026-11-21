@@ -1,10 +1,10 @@
 package dev.utherhel.attributification.gui.network;
 
 import dev.utherhel.attributification.Attributifaction;
-import net.minecraft.network.PacketByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Server → Client: notifies that legacy Fzzy Config mappings were found
@@ -12,27 +12,27 @@ import net.minecraft.util.Identifier;
  *
  * @param count the number of legacy mappings found (0 = none)
  */
-public record LegacyMappingsFoundPayload(int count) implements CustomPayload {
+public record LegacyMappingsFoundPayload(int count) implements CustomPacketPayload {
 
-    public static final Id<LegacyMappingsFoundPayload> ID = new Id<>(
-        Identifier.of(Attributifaction.MOD_ID, "legacy_mappings_found")
+    public static final Type<LegacyMappingsFoundPayload> ID = new Type<>(
+        ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "legacy_mappings_found")
     );
 
-    public static final PacketCodec<PacketByteBuf, LegacyMappingsFoundPayload> CODEC =
-        new PacketCodec<>() {
+    public static final StreamCodec<FriendlyByteBuf, LegacyMappingsFoundPayload> CODEC =
+        new StreamCodec<>() {
             @Override
-            public LegacyMappingsFoundPayload decode(PacketByteBuf buf) {
+            public LegacyMappingsFoundPayload decode(FriendlyByteBuf buf) {
                 return new LegacyMappingsFoundPayload(buf.readVarInt());
             }
 
             @Override
-            public void encode(PacketByteBuf buf, LegacyMappingsFoundPayload payload) {
+            public void encode(FriendlyByteBuf buf, LegacyMappingsFoundPayload payload) {
                 buf.writeVarInt(payload.count);
             }
         };
 
     @Override
-    public Id<? extends CustomPayload> getId() {
+    public Type<? extends CustomPacketPayload> type() {
         return ID;
     }
 }

@@ -1,7 +1,7 @@
 package dev.utherhel.attributification.gui.network;
 
 import dev.utherhel.attributification.AttributificationLogger;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Server-side permission check for the mapping editor's client-to-server requests.
@@ -17,11 +17,11 @@ public final class AdminGate {
     private AdminGate() {
     }
 
-    public static boolean isAllowed(ServerPlayerEntity player) {
+    public static boolean isAllowed(ServerPlayer player) {
         if (player == null) {
             return false;
         }
-        if (player.hasPermissionLevel(PERMISSION_LEVEL)) {
+        if (player.hasPermissions(PERMISSION_LEVEL)) {
             return true;
         }
         AttributificationLogger.warn("Ignoring mapping editor request from " + player.getName().getString()

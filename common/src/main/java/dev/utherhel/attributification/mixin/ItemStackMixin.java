@@ -6,10 +6,10 @@ import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import java.util.function.BiConsumer;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeModifier;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.core.Holder;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,20 +30,20 @@ public class ItemStackMixin {
      * This targets the AttributeModifiersComponent.applyModifiers call inside applyAttributeModifier
      */
     @ModifyArg(
-        method = "applyAttributeModifier",
+        method = "forEachModifier(Lnet/minecraft/world/entity/EquipmentSlotGroup;Ljava/util/function/BiConsumer;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/component/type/AttributeModifiersComponent;applyModifiers(Lnet/minecraft/component/type/AttributeModifierSlot;Ljava/util/function/BiConsumer;)V"
+            target = "Lnet/minecraft/world/item/component/ItemAttributeModifiers;forEach(Lnet/minecraft/world/entity/EquipmentSlotGroup;Ljava/util/function/BiConsumer;)V"
         ),
         index = 1
     )
     private BiConsumer<
-        RegistryEntry<EntityAttribute>,
-        EntityAttributeModifier
+        Holder<Attribute>,
+        AttributeModifier
     > wrapConsumerForTooltip(
         BiConsumer<
-            RegistryEntry<EntityAttribute>,
-            EntityAttributeModifier
+            Holder<Attribute>,
+            AttributeModifier
         > original
     ) {
         // Only run on Fabric; NeoForge uses NeoForgeAttributeUtilMixin for tooltip conversion
@@ -69,20 +69,20 @@ public class ItemStackMixin {
      * applyAttributeModifiers(EquipmentSlot, ...), not the tooltip method above
      */
     @ModifyArg(
-        method = "applyAttributeModifiers",
+        method = "forEachModifier(Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/minecraft/component/type/AttributeModifiersComponent;applyModifiers(Lnet/minecraft/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V"
+            target = "Lnet/minecraft/world/item/component/ItemAttributeModifiers;forEach(Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V"
         ),
         index = 1
     )
     private BiConsumer<
-        RegistryEntry<EntityAttribute>,
-        EntityAttributeModifier
+        Holder<Attribute>,
+        AttributeModifier
     > wrapConsumerForEquipment(
         BiConsumer<
-            RegistryEntry<EntityAttribute>,
-            EntityAttributeModifier
+            Holder<Attribute>,
+            AttributeModifier
         > original
     ) {
         return wrapConsumerForTooltip(original);
@@ -93,11 +93,11 @@ public class ItemStackMixin {
      */
     @Unique
     private void processModifier(
-        RegistryEntry<EntityAttribute> sourceAttr,
-        EntityAttributeModifier modifier,
+        Holder<Attribute> sourceAttr,
+        AttributeModifier modifier,
         BiConsumer<
-            RegistryEntry<EntityAttribute>,
-            EntityAttributeModifier
+            Holder<Attribute>,
+            AttributeModifier
         > consumer,
         AttributeUnifier unifier
     ) {
@@ -113,7 +113,7 @@ public class ItemStackMixin {
             return;
         }
 
-        RegistryEntry<EntityAttribute> targetAttr =
+        Holder<Attribute> targetAttr =
             AttributeUtils.getFirstAvailableAttribute(
                 mapping.getTargetAttributes()
             );
@@ -138,13 +138,13 @@ public class ItemStackMixin {
     @Unique
     private void applyMapping(
         String sourceId,
-        RegistryEntry<EntityAttribute> sourceAttr,
-        RegistryEntry<EntityAttribute> targetAttr,
-        EntityAttributeModifier modifier,
+        Holder<Attribute> sourceAttr,
+        Holder<Attribute> targetAttr,
+        AttributeModifier modifier,
         AttributeMappingEntry mapping,
         BiConsumer<
-            RegistryEntry<EntityAttribute>,
-            EntityAttributeModifier
+            Holder<Attribute>,
+            AttributeModifier
         > consumer
     ) {
         if (mapping.isOnlyVisualChange()) {
@@ -158,7 +158,7 @@ public class ItemStackMixin {
             return;
         }
 
-        EntityAttributeModifier convertedModifier = convertModifier(
+        AttributeModifier convertedModifier = convertModifier(
             modifier,
             mapping
         );
@@ -168,9 +168,9 @@ public class ItemStackMixin {
                 " -> " +
                 AttributeUtils.getAttributeId(targetAttr) +
                 ", value: " +
-                modifier.value() +
+                modifier.amount() +
                 " -> " +
-                convertedModifier.value()
+                convertedModifier.amount()
         );
         consumer.accept(targetAttr, convertedModifier);
     }
@@ -179,26 +179,26 @@ public class ItemStackMixin {
      * Converts modifier for tooltip display
      */
     @Unique
-    private EntityAttributeModifier convertModifier(
-        EntityAttributeModifier modifier,
+    private AttributeModifier convertModifier(
+        AttributeModifier modifier,
         AttributeMappingEntry mapping
     ) {
-        EntityAttributeModifier.Operation op = modifier.operation();
-        double value = modifier.value();
+        AttributeModifier.Operation op = modifier.operation();
+        double value = modifier.amount();
 
         // Convert value (only for ADD_VALUE)
-        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
+        if (op == AttributeModifier.Operation.ADD_VALUE) {
             value = value / mapping.getConversionEquivalence();
         }
 
         // Convert operation
-        if (op == EntityAttributeModifier.Operation.ADD_VALUE) {
+        if (op == AttributeModifier.Operation.ADD_VALUE) {
             switch (mapping.getOperationConversionType()) {
                 case ADDITION_TO_MULTIPLY_BASE:
-                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_BASE;
+                    op = AttributeModifier.Operation.ADD_MULTIPLIED_BASE;
                     break;
                 case ADDITION_TO_MULTIPLY_TOTAL:
-                    op = EntityAttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
+                    op = AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL;
                     break;
                 case DEFAULT:
                 default:
@@ -206,6 +206,6 @@ public class ItemStackMixin {
             }
         }
 
-        return new EntityAttributeModifier(modifier.id(), value, op);
+        return new AttributeModifier(modifier.id(), value, op);
     }
 }
