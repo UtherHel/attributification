@@ -32,9 +32,9 @@ enum EditorMode {
     }
 }
 //?} else {
-/*
 
-enum EditorMode {
+
+/*enum EditorMode {
     EDIT,
     OVERRIDE;
 

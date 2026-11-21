@@ -9,7 +9,12 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//? if >=26.1 {
+/^import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+^///?} else {
 import net.neoforged.neoforge.network.PacketDistributor;
+//?}
 
 /^*
  * Client-side setup that wires network payload callbacks to open the common {@link MappingsScreen}.
@@ -19,6 +24,14 @@ public final class AttributificationClientGuiSetup {
 
     private AttributificationClientGuiSetup() {}
 
+    private static void sendToServer(CustomPacketPayload payload) {
+        //? if >=26.1 {
+        /^ClientPacketDistributor.sendToServer(payload);
+        ^///?} else {
+        PacketDistributor.sendToServer(payload);
+        //?}
+    }
+
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
@@ -26,42 +39,42 @@ public final class AttributificationClientGuiSetup {
             MappingsScreen.callbacks = new MappingsScreen.Callbacks() {
                 @Override
                 public void requestFiles() {
-                    PacketDistributor.sendToServer(
+                    sendToServer(
                         new RequestMappingFilesPayload()
                     );
                 }
 
                 @Override
                 public void requestFileContent(String fileName) {
-                    PacketDistributor.sendToServer(
+                    sendToServer(
                         new RequestMappingFileContentPayload(fileName)
                     );
                 }
 
                 @Override
                 public void saveFile(String fileName, String jsonContent) {
-                    PacketDistributor.sendToServer(
+                    sendToServer(
                         new SaveMappingFilePayload(fileName, jsonContent)
                     );
                 }
 
                 @Override
                 public void deleteFile(String fileName) {
-                    PacketDistributor.sendToServer(
+                    sendToServer(
                         new DeleteMappingFilePayload(fileName)
                     );
                 }
 
                 @Override
                 public void requestAttributesList() {
-                    PacketDistributor.sendToServer(
+                    sendToServer(
                         new RequestAttributesListPayload()
                     );
                 }
 
                 @Override
                 public void convertLegacyMappings() {
-                    PacketDistributor.sendToServer(
+                    sendToServer(
                         new ConvertLegacyMappingsPayload()
                     );
                 }

@@ -4,6 +4,7 @@ package dev.utherhel.attributification.neoforge.mixin;
 /*import com.google.common.collect.Multimap;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import dev.kikugie.fletching_table.mixin.MixinEnvironment;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;
@@ -34,6 +35,7 @@ import java.util.function.Consumer;
  * and unconverted values in NeoForge tooltips.
  ^/
 @Mixin(AttributeUtil.class)
+@MixinEnvironment(value = "neoforge", type = MixinEnvironment.Env.CLIENT)
 public class NeoForgeAttributeUtilMixin {
 
     @Unique

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.SharedConstants;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -51,49 +52,65 @@ public final class AttributificationFabricPayloadHandler {
         .create();
     private static volatile ResourceManager currentResourceManager;
 
+    private static PayloadTypeRegistry<RegistryFriendlyByteBuf> s2c() {
+        //? if >=26.1 {
+        /*return PayloadTypeRegistry.clientboundPlay();
+        *///?} else {
+        return PayloadTypeRegistry.playS2C();
+        //?}
+    }
+
+    private static PayloadTypeRegistry<RegistryFriendlyByteBuf> c2s() {
+        //? if >=26.1 {
+        /*return PayloadTypeRegistry.serverboundPlay();
+        *///?} else {
+        return PayloadTypeRegistry.playC2S();
+        //?}
+    }
+
     public static void register() {
         // Register all payload types
-        PayloadTypeRegistry.playS2C().register(
+        s2c().register(
             OpenGuiPayload.ID,
             OpenGuiPayload.CODEC
         );
-        PayloadTypeRegistry.playC2S().register(
+        c2s().register(
             RequestMappingFilesPayload.ID,
             RequestMappingFilesPayload.CODEC
         );
-        PayloadTypeRegistry.playS2C().register(
+        s2c().register(
             MappingFilesListPayload.ID,
             MappingFilesListPayload.CODEC
         );
-        PayloadTypeRegistry.playC2S().register(
+        c2s().register(
             RequestMappingFileContentPayload.ID,
             RequestMappingFileContentPayload.CODEC
         );
-        PayloadTypeRegistry.playS2C().register(
+        s2c().register(
             MappingFileContentPayload.ID,
             MappingFileContentPayload.CODEC
         );
-        PayloadTypeRegistry.playC2S().register(
+        c2s().register(
             SaveMappingFilePayload.ID,
             SaveMappingFilePayload.CODEC
         );
-        PayloadTypeRegistry.playC2S().register(
+        c2s().register(
             DeleteMappingFilePayload.ID,
             DeleteMappingFilePayload.CODEC
         );
-        PayloadTypeRegistry.playS2C().register(
+        s2c().register(
             AttributesListPayload.ID,
             AttributesListPayload.CODEC
         );
-        PayloadTypeRegistry.playC2S().register(
+        c2s().register(
             RequestAttributesListPayload.ID,
             RequestAttributesListPayload.CODEC
         );
-        PayloadTypeRegistry.playS2C().register(
+        s2c().register(
             LegacyMappingsFoundPayload.ID,
             LegacyMappingsFoundPayload.CODEC
         );
-        PayloadTypeRegistry.playC2S().register(
+        c2s().register(
             ConvertLegacyMappingsPayload.ID,
             ConvertLegacyMappingsPayload.CODEC
         );
@@ -301,7 +318,7 @@ public final class AttributificationFabricPayloadHandler {
 
         // Try the world datapack first — that copy overrides the built-in
         // resource, so it must be what the GUI shows.
-        Path worldFilePath = getWorldFilePath(player.getServer(), id);
+        Path worldFilePath = getWorldFilePath(player.level().getServer(), id);
         if (Files.isRegularFile(worldFilePath)) {
             try {
                 String content = Files.readString(
@@ -491,12 +508,8 @@ public final class AttributificationFabricPayloadHandler {
         if (Files.exists(meta)) return;
 
         Files.createDirectories(meta.getParent());
-        JsonObject pack = new JsonObject();
-        pack.addProperty("description", "Attributification GUI mappings");
-        pack.addProperty(
-            "pack_format",
-            SharedConstants.getCurrentVersion()
-                .getPackVersion(PackType.SERVER_DATA)
+        JsonObject pack = dev.utherhel.attributification.gui.DatapackMeta.worldPack(
+            "Attributification GUI mappings"
         );
         JsonObject root = new JsonObject();
         root.add("pack", pack);

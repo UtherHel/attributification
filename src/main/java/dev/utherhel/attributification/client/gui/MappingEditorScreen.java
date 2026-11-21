@@ -10,7 +10,7 @@ import net.fabricmc.api.Environment;
 //?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import dev.utherhel.attributification.client.gui.compat.*;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.Tooltip;
@@ -30,7 +30,7 @@ import net.minecraft.network.chat.Component;
 //? if fabric {
 @Environment(EnvType.CLIENT)
 //?}
-class MappingEditorScreen extends Screen {
+class MappingEditorScreen extends CompatScreen {
 
     private final MappingsScreen parent;
     private final String fileId;
@@ -139,7 +139,7 @@ class MappingEditorScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        ClientScreens.open(parent);
     }
 
     @Override
@@ -175,11 +175,15 @@ class MappingEditorScreen extends Screen {
         }
 
         void scrollToBottom() {
+            //? if >=26.1 {
+            /*setScrollAmount(maxScrollAmount());
+            *///?} else {
             setScrollAmount(getMaxScroll());
+            //?}
         }
     }
 
-    private class MappingRow extends ContainerObjectSelectionList.Entry<MappingRow> {
+    private class MappingRow extends CompatContainerEntry<MappingRow> {
 
         private final int index;
         private final Button editBtn;
@@ -206,11 +210,10 @@ class MappingEditorScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics context,
-            int idx,
-            int y,
+        protected void renderEntry(
+            GuiGfx context,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -221,7 +224,7 @@ class MappingEditorScreen extends Screen {
             int mid = y + (entryHeight - 9) / 2;
 
             // Entry number badge
-            context.drawString(
+            context.text(
                 MappingEditorScreen.this.font,
                 Component.literal("#" + (index + 1)).withStyle(ChatFormatting.DARK_GRAY),
                 x + 2,
@@ -234,7 +237,7 @@ class MappingEditorScreen extends Screen {
             int summaryMaxX = x + entryWidth - 108;
             if (summaryMaxX > summaryX) {
                 context.enableScissor(summaryX, y, summaryMaxX, y + entryHeight);
-                context.drawString(
+                context.text(
                     MappingEditorScreen.this.font,
                     entries.get(index).summary(),
                     summaryX,
@@ -247,12 +250,12 @@ class MappingEditorScreen extends Screen {
             // Buttons on the right
             int btnRight = x + entryWidth - 4;
             removeBtn.setPosition(btnRight - 50, y + (entryHeight - 20) / 2);
-            removeBtn.render(context, mouseX, mouseY, tickDelta);
+            context.render(removeBtn, mouseX, mouseY, tickDelta);
             editBtn.setPosition(
                 btnRight - 104,
                 y + (entryHeight - 20) / 2
             );
-            editBtn.render(context, mouseX, mouseY, tickDelta);
+            context.render(editBtn, mouseX, mouseY, tickDelta);
         }
 
         @Override
@@ -267,7 +270,7 @@ class MappingEditorScreen extends Screen {
     }
 
     private void openEntry(int index) {
-        minecraft.setScreen(
+        ClientScreens.open(
             new MappingEntryScreen(this, entries.get(index), true)
         );
     }

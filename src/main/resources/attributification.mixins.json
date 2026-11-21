@@ -3,13 +3,7 @@
   "package": "dev.utherhel.attributification.mixin",
   "compatibilityLevel": "${java}",
   "minVersion": "0.8",
-  "client": [],
-  "mixins": [
-    "AttributeContainerMixin",
-    "AttributeMixin",
-    "EntityAttributeInstanceMixin",
-    "ItemStackMixin"
-  ],
+  "mixins": [],
   "injectors": {
     "defaultRequire": 1
   }

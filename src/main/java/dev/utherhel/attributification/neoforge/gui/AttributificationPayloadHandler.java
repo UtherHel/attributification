@@ -184,7 +184,7 @@ public final class AttributificationPayloadHandler {
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
-            MinecraftServer server = context.player().getServer();
+            MinecraftServer server = context.player().level().getServer();
             if (server == null) return;
 
             Path configDir = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get();
@@ -217,7 +217,7 @@ public final class AttributificationPayloadHandler {
 
                 // Notify player
                 if (context.player() instanceof ServerPlayer player) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.literal(
                             "Converted " +
                                 count +
@@ -245,7 +245,7 @@ public final class AttributificationPayloadHandler {
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
-            MinecraftServer server = context.player().getServer();
+            MinecraftServer server = context.player().level().getServer();
             if (server == null) return;
 
             ResourceManager rm = currentResourceManager;
@@ -336,7 +336,7 @@ public final class AttributificationPayloadHandler {
 
             // Try editable world datapack first — that copy overrides the
             // built-in resource, so it must be what the GUI shows.
-            MinecraftServer server = context.player().getServer();
+            MinecraftServer server = context.player().level().getServer();
             if (server != null) {
                 Path filePath = getWorldFilePath(server, id);
                 if (Files.isRegularFile(filePath)) {
@@ -409,7 +409,7 @@ public final class AttributificationPayloadHandler {
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
-            MinecraftServer server = context.player().getServer();
+            MinecraftServer server = context.player().level().getServer();
             if (server == null) return;
 
             String id = MappingFileNames.toValidId(payload.fileName());
@@ -418,7 +418,7 @@ public final class AttributificationPayloadHandler {
                     "Rejected mapping file id: " + payload.fileName()
                 );
                 if (context.player() instanceof ServerPlayer player) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable(
                             "command.attributification.gui.invalid_name",
                             String.valueOf(payload.fileName())
@@ -454,7 +454,7 @@ public final class AttributificationPayloadHandler {
 
                 // Notify the player
                 if (context.player() instanceof ServerPlayer player) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                         Component.translatable(
                             "command.attributification.gui.saved",
                             id
@@ -481,7 +481,7 @@ public final class AttributificationPayloadHandler {
                     || !dev.utherhel.attributification.gui.network.AdminGate.isAllowed(gateSender)) {
                 return;
             }
-            MinecraftServer server = context.player().getServer();
+            MinecraftServer server = context.player().level().getServer();
             if (server == null) return;
 
             String id = MappingFileNames.toValidId(payload.fileName());
@@ -506,7 +506,7 @@ public final class AttributificationPayloadHandler {
 
                     // Notify the player
                     if (context.player() instanceof ServerPlayer player) {
-                        player.displayClientMessage(
+                        player.sendSystemMessage(
                             Component.translatable(
                                 "command.attributification.gui.deleted",
                                 id
@@ -597,11 +597,8 @@ public final class AttributificationPayloadHandler {
         if (Files.exists(meta)) return;
 
         Files.createDirectories(meta.getParent());
-        JsonObject pack = new JsonObject();
-        pack.addProperty("description", "Attributification GUI mappings");
-        pack.addProperty(
-            "pack_format",
-            SharedConstants.getCurrentVersion().getPackVersion(PackType.SERVER_DATA)
+        JsonObject pack = dev.utherhel.attributification.gui.DatapackMeta.worldPack(
+            "Attributification GUI mappings"
         );
         JsonObject root = new JsonObject();
         root.add("pack", pack);

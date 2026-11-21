@@ -17,7 +17,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
  */
 public class AttributeUtils {
     
-    // Cache for Identifier objects to avoid repeated creation
+    // Cache for parsed attribute ids to avoid repeated creation
     private static final ConcurrentHashMap<String, ResourceLocation> identifierCache = new ConcurrentHashMap<>();
     
     // Shared cache for RegistryEntry<EntityAttribute> -> String ID mapping (used by all mixins)
@@ -45,7 +45,13 @@ public class AttributeUtils {
         }
         
         return attributeIdCache.computeIfAbsent(attribute, attr -> 
-            attr.unwrapKey().map(key -> key.location().toString()).orElse(null)
+            attr.unwrapKey().map(key -> key.
+                //? if >=1.21.11 {
+                /*identifier()
+                *///?} else {
+                location()
+                //?}
+                .toString()).orElse(null)
         );
     }
     
@@ -79,9 +85,13 @@ public class AttributeUtils {
         }
         
         try {
-            // Use cached Identifier to avoid repeated object creation
+            // Use the cached id to avoid repeated object creation
             ResourceLocation location = identifierCache.computeIfAbsent(attributeId, ResourceLocation::parse);
+            //? if >=1.21.2 {
+            /*return BuiltInRegistries.ATTRIBUTE.get(location).orElse(null);
+            *///?} else {
             return BuiltInRegistries.ATTRIBUTE.getHolder(location).orElse(null);
+            //?}
         } catch (Exception e) {
             return null;
         }
@@ -157,7 +167,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
  ^/
 public class AttributeUtils {
     
-    // Cache for Identifier objects to avoid repeated creation
+    // Cache for parsed attribute ids to avoid repeated creation
     private static final ConcurrentHashMap<String, ResourceLocation> identifierCache = new ConcurrentHashMap<>();
     
     // Shared cache for EntityAttribute -> String ID mapping (used by all mixins)
@@ -203,7 +213,7 @@ public class AttributeUtils {
         }
         
         try {
-            // Use cached Identifier to avoid repeated object creation
+            // Use the cached id to avoid repeated object creation
             ResourceLocation location = identifierCache.computeIfAbsent(attributeId, ResourceLocation::new);
             return BuiltInRegistries.ATTRIBUTE.get(location);
         } catch (Exception e) {

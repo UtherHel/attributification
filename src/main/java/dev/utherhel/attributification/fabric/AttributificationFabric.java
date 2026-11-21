@@ -1,6 +1,7 @@
 package dev.utherhel.attributification.fabric;
 
 //? if fabric {
+import dev.kikugie.fletching_table.fabric.Entrypoint;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.attribute.MappingLoader;
 import dev.utherhel.attributification.fabric.config.AttributificationFabricConfig;
@@ -11,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 
+@Entrypoint
 public final class AttributificationFabric implements ModInitializer {
 
     @Override

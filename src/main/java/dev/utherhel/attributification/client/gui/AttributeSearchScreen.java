@@ -10,9 +10,13 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 //?}
 import net.minecraft.ChatFormatting;
+//? if >=26.1 {
+/*import net.minecraft.util.Util;
+*///?} else {
 import net.minecraft.Util;
+//?}
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import dev.utherhel.attributification.client.gui.compat.*;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -31,7 +35,7 @@ import net.minecraft.network.chat.Component;
 //? if fabric {
 @Environment(EnvType.CLIENT)
 //?}
-class AttributeSearchScreen extends Screen {
+class AttributeSearchScreen extends CompatScreen {
 
     private final Screen parent;
     private final Consumer<String> onSelect;
@@ -146,7 +150,7 @@ class AttributeSearchScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        ClientScreens.open(parent);
     }
 
     @Override
@@ -155,21 +159,20 @@ class AttributeSearchScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    protected boolean onKeyPressed(int keyCode, int scanCode, int modifiers) {
         // Enter confirms the highlighted result.
         if ((keyCode == 257 || keyCode == 335) && results.getSelected() != null) {
             confirmSelection();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
 
     @Override
-    public void render(GuiGraphics ctx, int mouseX, int mouseY, float delta) {
-        super.render(ctx, mouseX, mouseY, delta);
+    protected void renderOverlay(GuiGfx ctx, int mouseX, int mouseY, float delta) {
 
         if (allAttributes.isEmpty()) {
-            ctx.drawCenteredString(
+            ctx.centeredText(
                 font,
                 Component.translatable(
                     "gui.attributification.mappings.status.no_attributes"
@@ -179,7 +182,7 @@ class AttributeSearchScreen extends Screen {
                 0xFFFF5555
             );
         } else if (results.getItemCount() == 0) {
-            ctx.drawCenteredString(
+            ctx.centeredText(
                 font,
                 Component.translatable(
                     "gui.attributification.mappings.no_matches"
@@ -249,7 +252,7 @@ class AttributeSearchScreen extends Screen {
     }
 
     private class ResultEntry
-        extends ObjectSelectionList.Entry<ResultEntry> {
+        extends CompatObjectEntry<ResultEntry> {
 
         private final String id;
         private long lastClickTime;
@@ -264,11 +267,10 @@ class AttributeSearchScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics ctx,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx ctx,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -276,7 +278,7 @@ class AttributeSearchScreen extends Screen {
             boolean hovered,
             float delta
         ) {
-            ctx.drawString(
+            ctx.text(
                 font,
                 Component.literal(id),
                 x + 3,
@@ -286,7 +288,7 @@ class AttributeSearchScreen extends Screen {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        protected boolean onClick(double mouseX, double mouseY, int button) {
             results.setSelected(this);
             long now = Util.getMillis();
             if (now - lastClickTime < 250L) {

@@ -39,7 +39,12 @@ public final class AttributificationNeoForgeConfig
     ) {
         AttributificationNeoForgeConfig config =
             new AttributificationNeoForgeConfig(new ModConfigSpec.Builder());
+        //? if >=26.3 {
+        /^// FML 12 renamed COMMON (per-side file in config/) to LOCAL
+        container.registerConfig(ModConfig.Type.LOCAL, config.spec);
+        ^///?} else {
         container.registerConfig(ModConfig.Type.COMMON, config.spec);
+        //?}
         return config;
     }
 
