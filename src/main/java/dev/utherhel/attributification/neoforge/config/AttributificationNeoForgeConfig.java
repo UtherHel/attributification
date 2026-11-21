@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge.config;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import dev.utherhel.attributification.config.AttributificationConfig;
 import dev.utherhel.attributification.config.LogLevel;
 import net.neoforged.fml.ModContainer;

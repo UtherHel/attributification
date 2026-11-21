@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.forge.gui;
 
-//? if forge {
+//? if forge || (neoforge && <1.20.5) {
 /*import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -42,13 +42,24 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraftforge.api.distmarker.Dist;
+//? if forge {
+/^import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
+^///?} else {
+// NeoForge 20.4: Forge's SimpleChannel API over NeoForge payloads (forge.network)
+import dev.utherhel.attributification.forge.network.NetworkDirection;
+import dev.utherhel.attributification.forge.network.NetworkEvent;
+import dev.utherhel.attributification.forge.network.NetworkRegistry;
+import dev.utherhel.attributification.forge.network.PacketDistributor;
+import dev.utherhel.attributification.forge.network.SimpleChannel;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLPaths;
+//?}
 
 public final class AttributificationPayloadHandler {
 

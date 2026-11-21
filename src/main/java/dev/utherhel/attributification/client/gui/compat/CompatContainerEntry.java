@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui.compat;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 //? if >=26.1 {
 /*import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -23,6 +23,12 @@ public abstract class CompatContainerEntry<E extends CompatContainerEntry<E>>
     //? if >=26.1 {
     /*@Override
     public final void extractContent(GuiGraphicsExtractor g, int mouseX, int mouseY, boolean hovered, float delta) {
+        renderEntry(new GuiGfx(g), getContentX(), getContentY(), getContentWidth(), getContentHeight(),
+            mouseX, mouseY, hovered, delta);
+    }
+    *///?} else if >=1.21.9 {
+    /*@Override
+    public final void renderContent(GuiGraphics g, int mouseX, int mouseY, boolean hovered, float delta) {
         renderEntry(new GuiGfx(g), getContentX(), getContentY(), getContentWidth(), getContentHeight(),
             mouseX, mouseY, hovered, delta);
     }

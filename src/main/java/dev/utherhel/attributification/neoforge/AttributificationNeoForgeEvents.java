@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.neoforge;
 
-//? if neoforge {
+//? if neoforge && >=1.20.5 {
 /*import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
@@ -44,10 +44,18 @@ public final class AttributificationNeoForgeEvents {
         // Collect conversions to apply after iteration
         List<Conversion> conversions = new ArrayList<>();
 
+        //? if >=1.21 {
         for (ItemAttributeModifiers.Entry entry : modifiers) {
             Holder<Attribute> attribute = entry.attribute();
             AttributeModifier modifier = entry.modifier();
             EquipmentSlotGroup slot = entry.slot();
+        //?} else {
+        /^// NeoForge 20.x fires the event once per equipment slot with a plain multimap
+        for (var entry : modifiers.entries()) {
+            Holder<Attribute> attribute = entry.getKey();
+            AttributeModifier modifier = entry.getValue();
+            EquipmentSlotGroup slot = null;
+        ^///?}
 
             String sourceId = AttributeUtils.getAttributeId(attribute);
             if (sourceId == null || !unifier.shouldUnify(sourceId)) continue;
@@ -66,7 +74,7 @@ public final class AttributificationNeoForgeEvents {
                 conversions.add(
                     new Conversion(
                         attribute,
-                        modifier.id(),
+                        modifier,
                         targetAttr,
                         modifier,
                         slot
@@ -89,7 +97,7 @@ public final class AttributificationNeoForgeEvents {
             conversions.add(
                 new Conversion(
                     attribute,
-                    modifier.id(),
+                    modifier,
                     targetAttr,
                     convertedModifier,
                     slot
@@ -109,12 +117,17 @@ public final class AttributificationNeoForgeEvents {
 
         // Apply conversions
         for (Conversion conv : conversions) {
-            event.removeModifier(conv.sourceAttribute(), conv.modifierId());
+            //? if >=1.21 {
+            event.removeModifier(conv.sourceAttribute(), conv.sourceModifier().id());
             event.addModifier(
                 conv.targetAttribute(),
                 conv.convertedModifier(),
                 conv.slot()
             );
+            //?} else {
+            /^event.removeModifier(conv.sourceAttribute(), conv.sourceModifier());
+            event.addModifier(conv.targetAttribute(), conv.convertedModifier());
+            ^///?}
         }
     }
 
@@ -148,7 +161,11 @@ public final class AttributificationNeoForgeEvents {
             }
         }
 
+        //? if >=1.21 {
         return new AttributeModifier(modifier.id(), value, op);
+        //?} else {
+        /^return new AttributeModifier(modifier.id(), modifier.name(), value, op);
+        ^///?}
     }
 
     /^*
@@ -156,7 +173,7 @@ public final class AttributificationNeoForgeEvents {
      ^/
     private record Conversion(
         Holder<Attribute> sourceAttribute,
-        ResourceLocation modifierId,
+        AttributeModifier sourceModifier,
         Holder<Attribute> targetAttribute,
         AttributeModifier convertedModifier,
         EquipmentSlotGroup slot

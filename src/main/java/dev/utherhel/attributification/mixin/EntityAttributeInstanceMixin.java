@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.mixin;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.ModifierRedirect;
@@ -116,6 +116,9 @@ public abstract class EntityAttributeInstanceMixin {
         
         return new AttributeModifier(
             modifier.id(),
+            //? if <1.21 {
+            /*modifier.name(),
+            *///?}
             value,
             op
         );
@@ -239,7 +242,11 @@ public abstract class EntityAttributeInstanceMixin {
         
         return new AttributeModifier(
             modifier.getId(),
-            modifier.getName(),
+            //? if >=1.20.3 {
+            modifier.save().getString("Name"),
+            //?} else {
+            /^modifier.getName(),
+            ^///?}
             value,
             op
         );

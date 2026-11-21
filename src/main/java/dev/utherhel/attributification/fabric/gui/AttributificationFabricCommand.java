@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.fabric.gui;
 
-//? if fabric && >=1.21 {
+//? if fabric && >=1.20.5 {
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -38,7 +38,7 @@ public final class AttributificationFabricCommand {
     private AttributificationFabricCommand() {}
 }
 //?}
-//? if fabric && <1.21 {
+//? if fabric && <1.20.5 {
 /*import com.mojang.brigadier.CommandDispatcher;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.gui.network.OpenGuiPayload;

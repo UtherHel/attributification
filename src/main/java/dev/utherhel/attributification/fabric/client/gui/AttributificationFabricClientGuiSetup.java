@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.fabric.client.gui;
 
-//? if fabric && >=1.21 {
+//? if fabric && >=1.20.5 {
 import dev.kikugie.fletching_table.fabric.Entrypoint;
 import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.*;
@@ -106,7 +106,7 @@ public final class AttributificationFabricClientGuiSetup
     }
 }
 //?}
-//? if fabric && <1.21 {
+//? if fabric && <1.20.5 {
 /*import dev.kikugie.fletching_table.fabric.Entrypoint;
 import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.AttributesListPayload;

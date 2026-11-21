@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.forge;
 
-//? if forge {
+//? if forge || (neoforge && <1.20.5) {
 /*import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;
@@ -8,9 +8,15 @@ import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraftforge.event.ItemAttributeModifierEvent;
+//? if forge {
+/^import net.minecraftforge.event.ItemAttributeModifierEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+^///?} else {
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.ItemAttributeModifierEvent;
+//?}
 
 import java.util.Collection;
 import java.util.Map;
@@ -77,7 +83,12 @@ public final class AttributificationForgeEvents {
             }
         }
 
-        return new AttributeModifier(modifier.getId(), modifier.getName(), value, op);
+        //? if forge {
+        /^return new AttributeModifier(modifier.getId(), modifier.getName(), value, op);
+        ^///?} else {
+        // 1.20.3+ has no getName(); the name is still saved with the modifier
+        return new AttributeModifier(modifier.getId(), modifier.save().getString("Name"), value, op);
+        //?}
     }
 }
 *///?}

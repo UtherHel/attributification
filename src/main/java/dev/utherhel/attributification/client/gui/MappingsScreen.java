@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import dev.utherhel.attributification.gui.MappingFileNames;
 import dev.utherhel.attributification.gui.network.MappingFileEntry;
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 //?}
 import net.minecraft.ChatFormatting;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.util.Util;
 *///?} else {
 import net.minecraft.Util;
@@ -835,7 +835,11 @@ public class MappingsScreen extends Screen {
         int footerX = (width - ROW_WIDTH) / 2;
         int row1Y = height - FOOTER_HEIGHT + 7;
         int row2Y = height - FOOTER_HEIGHT + 33;
-        fileList.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        //? if >=1.20.3 {
+        fileList.setRectangle(width, height - HEADER_HEIGHT - FOOTER_HEIGHT, 0, HEADER_HEIGHT);
+        //?} else {
+        /^fileList.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        ^///?}
         newFileField.setPosition(footerX, row1Y);
         createButton.setPosition(footerX + 176, row1Y);
         editButton.setPosition(footerX, row2Y);
@@ -1078,9 +1082,14 @@ public class MappingsScreen extends Screen {
             super(
                 Minecraft.getInstance(),
                 MappingsScreen.this.width,
-                MappingsScreen.this.height,
+                //? if >=1.20.3 {
+                MappingsScreen.this.height - HEADER_HEIGHT - FOOTER_HEIGHT,
+                HEADER_HEIGHT,
+                //?} else {
+                /^MappingsScreen.this.height,
                 HEADER_HEIGHT,
                 MappingsScreen.this.height - FOOTER_HEIGHT,
+                ^///?}
                 24
             );
         }

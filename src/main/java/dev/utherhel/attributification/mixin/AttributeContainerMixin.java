@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.mixin;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.AttributeUnifier;

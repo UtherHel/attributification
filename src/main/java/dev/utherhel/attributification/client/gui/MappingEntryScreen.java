@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import java.util.List;
 import java.util.function.Consumer;
 //? if fabric {
@@ -153,7 +153,7 @@ class MappingEntryScreen extends CompatScreen {
          * never while typing — so focus is never yanked out of a field.
          */
         void rebuild() {
-            //? if >=26.1 {
+            //? if >=1.21.4 {
             /*double scroll = scrollAmount();
             *///?} else {
             double scroll = getScrollAmount();
@@ -239,7 +239,7 @@ class MappingEntryScreen extends CompatScreen {
                 new WidgetRow(
                     "gui.attributification.mappings.mode",
                     width ->
-                        //? if >=26.1 {
+                        //? if >=1.21.11 {
                         /*CycleButton.<EditableMapping.Mode>builder(EditableMapping.Mode::label, mapping.mode)
                         *///?} else {
                         CycleButton.<EditableMapping.Mode>builder(EditableMapping.Mode::label)
@@ -264,7 +264,7 @@ class MappingEntryScreen extends CompatScreen {
                 new WidgetRow(
                     "gui.attributification.mappings.operation_conversion",
                     width ->
-                        //? if >=26.1 {
+                        //? if >=1.21.11 {
                         /*CycleButton.<EditableMapping.OpConversion>builder(EditableMapping.OpConversion::label, mapping.operationConversion)
                         *///?} else {
                         CycleButton.<EditableMapping.OpConversion>builder(EditableMapping.OpConversion::label)
@@ -742,7 +742,11 @@ class MappingEntryScreen extends Screen {
 
     /^* Applies the footer/list layout for the current screen size. ^/
     private void refreshPositions() {
-        list.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        //? if >=1.20.3 {
+        list.setRectangle(width, height - HEADER_HEIGHT - FOOTER_HEIGHT, 0, HEADER_HEIGHT);
+        //?} else {
+        /^list.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        ^///?}
         doneButton.setPosition((width - 80) / 2, height - FOOTER_HEIGHT + 10);
     }
 
@@ -792,9 +796,14 @@ class MappingEntryScreen extends Screen {
             super(
                 Minecraft.getInstance(),
                 MappingEntryScreen.this.width,
-                MappingEntryScreen.this.height,
+                //? if >=1.20.3 {
+                MappingEntryScreen.this.height - HEADER_HEIGHT - FOOTER_HEIGHT,
+                HEADER_HEIGHT,
+                //?} else {
+                /^MappingEntryScreen.this.height,
                 HEADER_HEIGHT,
                 MappingEntryScreen.this.height - FOOTER_HEIGHT,
+                ^///?}
                 ROW_H
             );
             rebuild();
@@ -1031,7 +1040,11 @@ class MappingEntryScreen extends Screen {
             );
             field.setMaxLength(256);
             field.setValue(backing.get(index));
-            field.moveCursorToStart();
+            //? if >=1.20.2 {
+            field.moveCursorToStart(false);
+            //?} else {
+            /^field.moveCursorToStart();
+            ^///?}
             field.setEditable(editable);
             field.setHint(
                 Component.translatable(
@@ -1054,7 +1067,11 @@ class MappingEntryScreen extends Screen {
                                     backing.set(index, selected);
                                 }
                                 field.setValue(selected);
-                                field.moveCursorToStart();
+                                //? if >=1.20.2 {
+                                field.moveCursorToStart(false);
+                                //?} else {
+                                /^field.moveCursorToStart();
+                                ^///?}
                             }
                         )
                     )
@@ -1257,7 +1274,11 @@ class MappingEntryScreen extends Screen {
             );
             field.setMaxLength(32);
             field.setValue(EditableMapping.format(initial));
-            field.moveCursorToStart();
+            //? if >=1.20.2 {
+            field.moveCursorToStart(false);
+            //?} else {
+            /^field.moveCursorToStart();
+            ^///?}
             field.setEditable(editable);
             field.setResponder(value -> {
                 String trimmed = value.trim();

@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.fabric.gui;
 
-//? if fabric && >=1.21 {
+//? if fabric && >=1.20.5 {
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
@@ -338,7 +338,11 @@ public final class AttributificationFabricPayloadHandler {
         }
 
         // Fall back to datapack resources (built-in, read-only files)
+        //? if >=1.21 {
         ResourceLocation resourceId = ResourceLocation.fromNamespaceAndPath(
+        //?} else {
+        /*ResourceLocation resourceId = new ResourceLocation(
+        *///?}
             MappingFileNames.namespaceOf(id),
             MappingFileNames.MAPPINGS_DIR +
                 "/" +
@@ -523,7 +527,7 @@ public final class AttributificationFabricPayloadHandler {
     private AttributificationFabricPayloadHandler() {}
 }
 //?}
-//? if fabric && <1.21 {
+//? if fabric && <1.20.5 {
 /*import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;

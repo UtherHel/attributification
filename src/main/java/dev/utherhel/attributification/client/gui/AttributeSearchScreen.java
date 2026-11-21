@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -10,7 +10,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 //?}
 import net.minecraft.ChatFormatting;
-//? if >=26.1 {
+//? if >=1.21.11 {
 /*import net.minecraft.util.Util;
 *///?} else {
 import net.minecraft.Util;
@@ -404,7 +404,11 @@ class AttributeSearchScreen extends Screen {
 
     /^* Applies the header/footer/list layout for the current screen size. ^/
     private void refreshPositions() {
-        results.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        //? if >=1.20.3 {
+        results.setRectangle(width, height - HEADER_HEIGHT - FOOTER_HEIGHT, 0, HEADER_HEIGHT);
+        //?} else {
+        /^results.updateSize(width, height, HEADER_HEIGHT, height - FOOTER_HEIGHT);
+        ^///?}
         searchField.setPosition(width / 2 - 110, 30);
         selectButton.setPosition((width - 208) / 2, height - FOOTER_HEIGHT + 10);
         cancelButton.setPosition(
@@ -495,9 +499,14 @@ class AttributeSearchScreen extends Screen {
             super(
                 Minecraft.getInstance(),
                 AttributeSearchScreen.this.width,
-                AttributeSearchScreen.this.height,
+                //? if >=1.20.3 {
+                AttributeSearchScreen.this.height - HEADER_HEIGHT - FOOTER_HEIGHT,
+                HEADER_HEIGHT,
+                //?} else {
+                /^AttributeSearchScreen.this.height,
                 HEADER_HEIGHT,
                 AttributeSearchScreen.this.height - FOOTER_HEIGHT,
+                ^///?}
                 16
             );
         }

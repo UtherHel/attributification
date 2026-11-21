@@ -1,13 +1,13 @@
 package dev.utherhel.attributification.mixin;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import dev.utherhel.attributification.AttributeUnifier;
 import dev.utherhel.attributification.Attributifaction;
 import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import java.util.function.BiConsumer;
-//? if >=26.1 {
+//? if >=1.21.6 {
 /*import net.minecraft.world.item.component.ItemAttributeModifiers;
 import org.apache.commons.lang3.function.TriConsumer;
 *///?}
@@ -30,7 +30,7 @@ public class ItemStackMixin {
     private static final ThreadLocal<Boolean> isProcessing =
         ThreadLocal.withInitial(() -> false);
 
-    //? if >=26.1 {
+    //? if >=1.21.6 {
     /*@ModifyArg(
         method = "forEachModifier(Lnet/minecraft/world/entity/EquipmentSlotGroup;Lorg/apache/commons/lang3/function/TriConsumer;)V",
         at = @At(
@@ -42,7 +42,7 @@ public class ItemStackMixin {
     private TriConsumer<Holder<Attribute>, AttributeModifier, ItemAttributeModifiers.Display> wrapConsumerForTooltip(
         TriConsumer<Holder<Attribute>, AttributeModifier, ItemAttributeModifiers.Display> original
     ) {
-        // Since 1.21.5 the tooltip path carries a Display per modifier; convert like the BiConsumer path and keep it
+        // Since 1.21.6 the tooltip path carries a Display per modifier; convert like the BiConsumer path and keep it
         if (!Attributifaction.isFabric()) return original;
         if (Boolean.TRUE.equals(isProcessing.get())) return original;
         AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
@@ -56,7 +56,7 @@ public class ItemStackMixin {
             }
         };
     }
-    *///?} else {
+    *///?} else if >=1.21 {
     /**
      * Wraps the consumer to convert source → target for tooltip display
      * This targets the AttributeModifiersComponent.applyModifiers call inside applyAttributeModifier
@@ -84,7 +84,8 @@ public class ItemStackMixin {
 
     /**
      * Same conversion for equipment: entities apply item modifiers through
-     * applyAttributeModifiers(EquipmentSlot, ...), not the tooltip method above
+     * applyAttributeModifiers(EquipmentSlot, ...), not the tooltip method above.
+     * Before 1.21 the tooltip also goes through this method, slot by slot.
      */
     @ModifyArg(
         method = "forEachModifier(Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V",
@@ -92,6 +93,10 @@ public class ItemStackMixin {
             value = "INVOKE",
             target = "Lnet/minecraft/world/item/component/ItemAttributeModifiers;forEach(Lnet/minecraft/world/entity/EquipmentSlot;Ljava/util/function/BiConsumer;)V"
         ),
+        //? if neoforge && <1.21 {
+        /*// NeoForge 20.x replaces this call with ItemAttributeModifierEvent (handled in AttributificationNeoForgeEvents)
+        require = 0,
+        *///?}
         index = 1
     )
     private BiConsumer<
@@ -245,7 +250,11 @@ public class ItemStackMixin {
             }
         }
 
+        //? if >=1.21 {
         return new AttributeModifier(modifier.id(), value, op);
+        //?} else {
+        /*return new AttributeModifier(modifier.id(), modifier.name(), value, op);
+        *///?}
     }
 }
 //?} else {
@@ -402,7 +411,11 @@ public class ItemStackMixin {
         
         return new AttributeModifier(
             modifier.getId(),
-            modifier.getName(),
+            //? if >=1.20.3 {
+            modifier.save().getString("Name"),
+            //?} else {
+            /^modifier.getName(),
+            ^///?}
             value,
             op
         );

@@ -1,6 +1,6 @@
 package dev.utherhel.attributification.client.gui.compat;
 
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.network.chat.Component;
@@ -34,6 +34,9 @@ public final class GuiGfx {
     public int text(Font font, Component text, int x, int y, int color) {
         //? if >=26.1 {
         /*g.text(font, text, x, y, color);
+        return x + font.width(text);
+        *///?} else if >=1.21.6 {
+        /*g.drawString(font, text, x, y, color);
         return x + font.width(text);
         *///?} else {
         return g.drawString(font, text, x, y, color);

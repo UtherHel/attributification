@@ -42,7 +42,16 @@ stonecutter {
         match("26.3", "fabric", "neoforge")
         match("26.2", "fabric", "neoforge")
         match("26.1", "fabric", "neoforge")
+        match("1.21.11", "fabric", "neoforge")
+        match("1.21.10", "fabric", "neoforge")
+        match("1.21.8", "fabric", "neoforge")
+        match("1.21.5", "fabric", "neoforge")
+        match("1.21.4", "fabric", "neoforge")
+        match("1.21.3", "fabric", "neoforge")
         match("1.21.1", "fabric", "neoforge")
+        match("1.20.6", "fabric", "neoforge")
+        match("1.20.4", "fabric", "neoforge")
+        match("1.20.2", "fabric") // ModDevGradle has no NeoForge 20.2 support
         match("1.20.1", "fabric", "forge")
     }
 }

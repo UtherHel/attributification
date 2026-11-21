@@ -3,7 +3,7 @@ package dev.utherhel.attributification.gui.network;
 import dev.utherhel.attributification.Attributifaction;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?}
@@ -12,15 +12,19 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  * Client → Server: requests conversion of legacy Fzzy Config mappings
  * to the new datapack format.
  */
-//? if >=1.21 {
+//? if >=1.20.5 {
 public record ConvertLegacyMappingsPayload() implements CustomPacketPayload {
 //?} else {
 /*public record ConvertLegacyMappingsPayload() {
 *///?}
 
-    //? if >=1.21 {
+    //? if >=1.20.5 {
     public static final Type<ConvertLegacyMappingsPayload> ID = new Type<>(
+        //? if >=1.21 {
         ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "convert_legacy_mappings")
+        //?} else {
+        /*new ResourceLocation(Attributifaction.MOD_ID, "convert_legacy_mappings")
+        *///?}
     );
 
     public static final StreamCodec<FriendlyByteBuf, ConvertLegacyMappingsPayload> CODEC =

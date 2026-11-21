@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-//? if >=1.21 {
+//? if >=1.20.5 {
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 //?}
@@ -16,15 +16,19 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  *
  * @param attributes list of attribute string IDs (e.g., "minecraft:generic.attack_damage")
  */
-//? if >=1.21 {
+//? if >=1.20.5 {
 public record AttributesListPayload(List<String> attributes) implements CustomPacketPayload {
 //?} else {
 /*public record AttributesListPayload(List<String> attributes) {
 *///?}
 
-    //? if >=1.21 {
+    //? if >=1.20.5 {
     public static final Type<AttributesListPayload> ID = new Type<>(
+        //? if >=1.21 {
         ResourceLocation.fromNamespaceAndPath(Attributifaction.MOD_ID, "attributes_list")
+        //?} else {
+        /*new ResourceLocation(Attributifaction.MOD_ID, "attributes_list")
+        *///?}
     );
 
     public static final StreamCodec<FriendlyByteBuf, AttributesListPayload> CODEC =
