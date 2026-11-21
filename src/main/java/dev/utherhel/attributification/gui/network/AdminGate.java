@@ -1,7 +1,11 @@
 package dev.utherhel.attributification.gui.network;
 
 import dev.utherhel.attributification.AttributificationLogger;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
+//? if >=26.1 {
+/*import net.minecraft.server.permissions.Permissions;
+*///?}
 
 /**
  * Server-side permission check for the mapping editor's client-to-server requests.
@@ -12,6 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class AdminGate {
 
+    /** Game master level (2), the level of {@code /gamerule} and similar commands. */
     public static final int PERMISSION_LEVEL = 2;
 
     private AdminGate() {
@@ -21,11 +26,28 @@ public final class AdminGate {
         if (player == null) {
             return false;
         }
-        if (player.hasPermissions(PERMISSION_LEVEL)) {
+        if (isOperator(player)) {
             return true;
         }
         AttributificationLogger.warn("Ignoring mapping editor request from " + player.getName().getString()
             + ": operator permission level " + PERMISSION_LEVEL + " required");
         return false;
+    }
+
+    public static boolean isOperator(ServerPlayer player) {
+        //? if >=26.1 {
+        /*return player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        *///?} else {
+        return player.hasPermissions(PERMISSION_LEVEL);
+        //?}
+    }
+
+    /** For {@code .requires(...)} of the editor command. */
+    public static boolean isOperator(CommandSourceStack source) {
+        //? if >=26.1 {
+        /*return source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER);
+        *///?} else {
+        return source.hasPermission(PERMISSION_LEVEL);
+        //?}
     }
 }

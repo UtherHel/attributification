@@ -1,11 +1,13 @@
 package dev.utherhel.attributification.fabric.client.gui;
 
 //? if fabric && >=1.21 {
+import dev.kikugie.fletching_table.fabric.Entrypoint;
 import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.*;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
+@Entrypoint(Entrypoint.CLIENT)
 public final class AttributificationFabricClientGuiSetup
     implements ClientModInitializer
 {
@@ -105,7 +107,8 @@ public final class AttributificationFabricClientGuiSetup
 }
 //?}
 //? if fabric && <1.21 {
-/*import dev.utherhel.attributification.client.gui.MappingsScreen;
+/*import dev.kikugie.fletching_table.fabric.Entrypoint;
+import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.AttributesListPayload;
 import dev.utherhel.attributification.gui.network.ConvertLegacyMappingsPayload;
 import dev.utherhel.attributification.gui.network.DeleteMappingFilePayload;
@@ -125,6 +128,7 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.network.FriendlyByteBuf;
 
 @Environment(EnvType.CLIENT)
+@Entrypoint(Entrypoint.CLIENT)
 public final class AttributificationFabricClientGuiSetup implements ClientModInitializer {
 
     @Override

@@ -16,7 +16,7 @@ public final class AttributificationFabricCommand {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(
                 literal("attributification")
-                    .requires(source -> source.hasPermission(2))
+                    .requires(dev.utherhel.attributification.gui.network.AdminGate::isOperator)
                     .then(literal("gui")
                         .executes(ctx -> {
                             CommandSourceStack source = ctx.getSource();

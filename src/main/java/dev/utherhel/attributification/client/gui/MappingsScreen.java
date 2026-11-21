@@ -10,10 +10,14 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 //?}
 import net.minecraft.ChatFormatting;
+//? if >=26.1 {
+/*import net.minecraft.util.Util;
+*///?} else {
 import net.minecraft.Util;
+//?}
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import dev.utherhel.attributification.client.gui.compat.*;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
@@ -36,7 +40,7 @@ import net.minecraft.network.chat.Component;
 //? if fabric {
 @Environment(EnvType.CLIENT)
 //?}
-public class MappingsScreen extends Screen {
+public class MappingsScreen extends CompatScreen {
 
     // ── Platform bridge ───────────────────────────────────────────────────
 
@@ -91,7 +95,7 @@ public class MappingsScreen extends Screen {
     // ── Static delivery (called from the loader payload handlers) ─────────
 
     public static void deliverOpen() {
-        Minecraft.getInstance().setScreen(new MappingsScreen());
+        ClientScreens.open(new MappingsScreen());
     }
 
     public static void deliverFilesList(List<MappingFileEntry> files) {
@@ -126,7 +130,7 @@ public class MappingsScreen extends Screen {
     }
 
     private static Screen current() {
-        return Minecraft.getInstance().screen;
+        return ClientScreens.current();
     }
 
     // ── Instance state ────────────────────────────────────────────────────
@@ -176,8 +180,21 @@ public class MappingsScreen extends Screen {
         );
         // Latin letters, digits, '_' and '-' only: Minecraft rejects anything
         // else in a datapack path, which would break the whole pack.
+        //? if >=26.1 {
+        /*// EditBox lost setFilter: undo any edit that adds a character the name may not contain
+        String[] lastValid = { "" };
+        newFileField.setResponder(value -> {
+            if (!MappingFileNames.isTypeable(value)) {
+                newFileField.setValue(lastValid[0]);
+                return;
+            }
+            lastValid[0] = value;
+            refreshButtons();
+        });
+        *///?} else {
         newFileField.setFilter(MappingFileNames::isTypeable);
         newFileField.setResponder(value -> refreshButtons());
+        //?}
         top.addChild(newFileField);
 
         createButton = top.addChild(
@@ -344,7 +361,7 @@ public class MappingsScreen extends Screen {
         newFileField.setValue("");
         List<EditableMapping> entries = new ArrayList<>();
         entries.add(new EditableMapping());
-        minecraft.setScreen(
+        ClientScreens.open(
             new MappingEditorScreen(this, id, entries, EditorMode.EDIT)
         );
     }
@@ -360,7 +377,7 @@ public class MappingsScreen extends Screen {
     private void confirmDelete() {
         MappingFileEntry file = selectedFile();
         if (file == null || !file.editable()) return;
-        minecraft.setScreen(
+        ClientScreens.open(
             new ConfirmScreen(
                 confirmed -> {
                     if (confirmed) {
@@ -372,7 +389,7 @@ public class MappingsScreen extends Screen {
                         );
                         callbacks.requestFiles();
                     }
-                    minecraft.setScreen(this);
+                    ClientScreens.open(this);
                 },
                 Component.translatable(
                     "gui.attributification.mappings.confirm_delete"
@@ -419,7 +436,7 @@ public class MappingsScreen extends Screen {
             );
             return;
         }
-        minecraft.setScreen(
+        ClientScreens.open(
             new MappingEditorScreen(this, fileName, entries, mode)
         );
     }
@@ -445,11 +462,10 @@ public class MappingsScreen extends Screen {
     // ── Render ────────────────────────────────────────────────────────────
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+    protected void renderOverlay(GuiGfx context, int mouseX, int mouseY, float delta) {
 
         if (files.isEmpty()) {
-            context.drawCenteredString(
+            context.centeredText(
                 font,
                 Component.translatable("gui.attributification.mappings.no_files"),
                 width / 2,
@@ -459,7 +475,7 @@ public class MappingsScreen extends Screen {
         }
 
         if (statusTimer > 0 && status != Component.empty()) {
-            context.drawCenteredString(
+            context.centeredText(
                 font,
                 status,
                 width / 2,
@@ -516,7 +532,7 @@ public class MappingsScreen extends Screen {
         }
     }
 
-    private class FileEntry extends ObjectSelectionList.Entry<FileEntry> {
+    private class FileEntry extends CompatObjectEntry<FileEntry> {
 
         private final MappingFileEntry file;
         private long lastClickTime;
@@ -531,11 +547,10 @@ public class MappingsScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics context,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx context,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -551,7 +566,7 @@ public class MappingsScreen extends Screen {
                 ? Component.translatable("gui.attributification.mappings.world")
                 : Component.translatable("gui.attributification.mappings.read_only");
             int badgeWidth = textRenderer.width(badge);
-            context.drawString(
+            context.text(
                 textRenderer,
                 badge,
                 x + entryWidth - badgeWidth - 4,
@@ -567,14 +582,14 @@ public class MappingsScreen extends Screen {
 
             int nameLimit = x + entryWidth - badgeWidth - 10;
             context.enableScissor(x + 4, y, Math.max(x + 4, nameLimit), y + entryHeight);
-            int nsX = context.drawString(
+            int nsX = context.text(
                 textRenderer,
                 Component.literal(namespace).withStyle(ChatFormatting.DARK_GRAY),
                 x + 4,
                 textY,
                 0xFF555555
             );
-            context.drawString(
+            context.text(
                 textRenderer,
                 Component.literal(name),
                 nsX,
@@ -585,7 +600,7 @@ public class MappingsScreen extends Screen {
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        protected boolean onClick(double mouseX, double mouseY, int button) {
             MappingsScreen.this.fileList.setSelected(this);
             long now = Util.getMillis();
             if (now - lastClickTime < 250L) {

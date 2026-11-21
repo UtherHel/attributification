@@ -7,6 +7,10 @@ import dev.utherhel.attributification.AttributificationLogger;
 import dev.utherhel.attributification.config.AttributeMappingEntry;
 import dev.utherhel.attributification.util.AttributeUtils;
 import java.util.function.BiConsumer;
+//? if >=26.1 {
+/*import net.minecraft.world.item.component.ItemAttributeModifiers;
+import org.apache.commons.lang3.function.TriConsumer;
+*///?}
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -26,6 +30,33 @@ public class ItemStackMixin {
     private static final ThreadLocal<Boolean> isProcessing =
         ThreadLocal.withInitial(() -> false);
 
+    //? if >=26.1 {
+    /*@ModifyArg(
+        method = "forEachModifier(Lnet/minecraft/world/entity/EquipmentSlotGroup;Lorg/apache/commons/lang3/function/TriConsumer;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/world/item/component/ItemAttributeModifiers;forEach(Lnet/minecraft/world/entity/EquipmentSlotGroup;Lorg/apache/commons/lang3/function/TriConsumer;)V"
+        ),
+        index = 1
+    )
+    private TriConsumer<Holder<Attribute>, AttributeModifier, ItemAttributeModifiers.Display> wrapConsumerForTooltip(
+        TriConsumer<Holder<Attribute>, AttributeModifier, ItemAttributeModifiers.Display> original
+    ) {
+        // Since 1.21.5 the tooltip path carries a Display per modifier; convert like the BiConsumer path and keep it
+        if (!Attributifaction.isFabric()) return original;
+        if (Boolean.TRUE.equals(isProcessing.get())) return original;
+        AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
+        if (unifier == null) return original;
+        return (attribute, modifier, display) -> {
+            isProcessing.set(true);
+            try {
+                processModifier(attribute, modifier, (a, mod) -> original.accept(a, mod, display), unifier);
+            } finally {
+                isProcessing.remove();
+            }
+        };
+    }
+    *///?} else {
     /**
      * Wraps the consumer to convert source → target for tooltip display
      * This targets the AttributeModifiersComponent.applyModifiers call inside applyAttributeModifier
@@ -47,23 +78,9 @@ public class ItemStackMixin {
             AttributeModifier
         > original
     ) {
-        // Only run on Fabric; NeoForge uses NeoForgeAttributeUtilMixin for tooltip conversion
-        if (!Attributifaction.isFabric()) return original;
-        if (Boolean.TRUE.equals(isProcessing.get())) return original;
-
-        AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
-        if (unifier == null) return original;
-
-        // Return wrapped consumer that converts attributes
-        return (attribute, modifier) -> {
-            isProcessing.set(true);
-            try {
-                processModifier(attribute, modifier, original, unifier);
-            } finally {
-                isProcessing.remove();
-            }
-        };
+        return wrapBiConsumer(original);
     }
+    //?}
 
     /**
      * Same conversion for equipment: entities apply item modifiers through
@@ -86,7 +103,28 @@ public class ItemStackMixin {
             AttributeModifier
         > original
     ) {
-        return wrapConsumerForTooltip(original);
+        return wrapBiConsumer(original);
+    }
+
+    @Unique
+    private BiConsumer<Holder<Attribute>, AttributeModifier> wrapBiConsumer(
+        BiConsumer<Holder<Attribute>, AttributeModifier> original
+    ) {
+        // Only run on Fabric; NeoForge uses NeoForgeAttributeUtilMixin for tooltip conversion
+        if (!Attributifaction.isFabric()) return original;
+        if (Boolean.TRUE.equals(isProcessing.get())) return original;
+
+        AttributeUnifier unifier = Attributifaction.getAttributeUnifier();
+        if (unifier == null) return original;
+
+        return (attribute, modifier) -> {
+            isProcessing.set(true);
+            try {
+                processModifier(attribute, modifier, original, unifier);
+            } finally {
+                isProcessing.remove();
+            }
+        };
     }
 
     /**

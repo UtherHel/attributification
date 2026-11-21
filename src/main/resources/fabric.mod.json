@@ -13,15 +13,6 @@
   "license": "MIT",
   "icon": "assets/${id}/icon.png",
   "environment": "*",
-  "entrypoints": {
-    "main": [
-      "dev.utherhel.attributification.fabric.AttributificationFabric"
-    ],
-    "client": [
-      "dev.utherhel.attributification.fabric.client.AttributificationFabricClient",
-      "dev.utherhel.attributification.fabric.client.gui.AttributificationFabricClientGuiSetup"
-    ]
-  },
   "mixins": [
     "attributification.mixins.json"
   ],

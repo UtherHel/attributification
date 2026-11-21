@@ -9,7 +9,7 @@ import net.fabricmc.api.Environment;
 //?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import dev.utherhel.attributification.client.gui.compat.*;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.CycleButton;
@@ -36,7 +36,7 @@ import net.minecraft.network.chat.Component;
 //? if fabric {
 @Environment(EnvType.CLIENT)
 //?}
-class MappingEntryScreen extends Screen {
+class MappingEntryScreen extends CompatScreen {
 
     private static final int ROW_H = 24;
     private static final int WIDGET_H = 20;
@@ -105,7 +105,7 @@ class MappingEntryScreen extends Screen {
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        ClientScreens.open(parent);
     }
 
     @Override
@@ -153,7 +153,11 @@ class MappingEntryScreen extends Screen {
          * never while typing — so focus is never yanked out of a field.
          */
         void rebuild() {
+            //? if >=26.1 {
+            /*double scroll = scrollAmount();
+            *///?} else {
             double scroll = getScrollAmount();
+            //?}
             clearEntries();
 
             // ── Sources ───────────────────────────────────────────────────
@@ -235,11 +239,13 @@ class MappingEntryScreen extends Screen {
                 new WidgetRow(
                     "gui.attributification.mappings.mode",
                     width ->
-                        CycleButton.<EditableMapping.Mode>builder(
-                            EditableMapping.Mode::label
-                        )
-                            .withValues(EditableMapping.Mode.values())
+                        //? if >=26.1 {
+                        /*CycleButton.<EditableMapping.Mode>builder(EditableMapping.Mode::label, mapping.mode)
+                        *///?} else {
+                        CycleButton.<EditableMapping.Mode>builder(EditableMapping.Mode::label)
                             .withInitialValue(mapping.mode)
+                        //?}
+                            .withValues(EditableMapping.Mode.values())
                             .displayOnlyValue()
                             .withTooltip(mode -> Tooltip.create(mode.description()))
                             .create(
@@ -258,11 +264,13 @@ class MappingEntryScreen extends Screen {
                 new WidgetRow(
                     "gui.attributification.mappings.operation_conversion",
                     width ->
-                        CycleButton.<EditableMapping.OpConversion>builder(
-                            EditableMapping.OpConversion::label
-                        )
-                            .withValues(EditableMapping.OpConversion.values())
+                        //? if >=26.1 {
+                        /*CycleButton.<EditableMapping.OpConversion>builder(EditableMapping.OpConversion::label, mapping.operationConversion)
+                        *///?} else {
+                        CycleButton.<EditableMapping.OpConversion>builder(EditableMapping.OpConversion::label)
                             .withInitialValue(mapping.operationConversion)
+                        //?}
+                            .withValues(EditableMapping.OpConversion.values())
                             .displayOnlyValue()
                             .create(
                                 0,
@@ -284,7 +292,7 @@ class MappingEntryScreen extends Screen {
 
     // ── Rows ──────────────────────────────────────────────────────────────
 
-    private abstract static class Row extends ContainerObjectSelectionList.Entry<Row> {}
+    private abstract static class Row extends CompatContainerEntry<Row> {}
 
     /** A non-interactive section heading. */
     private class SectionRow extends Row {
@@ -296,11 +304,10 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics ctx,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx ctx,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -309,7 +316,7 @@ class MappingEntryScreen extends Screen {
             float delta
         ) {
             // Sits at the bottom of its row so it reads as a header for what follows.
-            ctx.drawString(
+            ctx.text(
                 font,
                 label,
                 x,
@@ -383,7 +390,7 @@ class MappingEntryScreen extends Screen {
             searchBtn = Button.builder(
                 Component.literal("…"),
                 b ->
-                    minecraft.setScreen(
+                    ClientScreens.open(
                         new AttributeSearchScreen(
                             MappingEntryScreen.this,
                             MappingsScreen.attributes(),
@@ -429,11 +436,10 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics ctx,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx ctx,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -454,9 +460,9 @@ class MappingEntryScreen extends Screen {
             field.setPosition(x, top);
             field.setWidth(fieldW);
 
-            field.render(ctx, mouseX, mouseY, delta);
-            searchBtn.render(ctx, mouseX, mouseY, delta);
-            removeBtn.render(ctx, mouseX, mouseY, delta);
+            ctx.render(field, mouseX, mouseY, delta);
+            ctx.render(searchBtn, mouseX, mouseY, delta);
+            ctx.render(removeBtn, mouseX, mouseY, delta);
         }
 
         @Override
@@ -484,11 +490,10 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics ctx,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx ctx,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -498,7 +503,7 @@ class MappingEntryScreen extends Screen {
         ) {
             button.setPosition(x, y + (entryHeight - WIDGET_H) / 2);
             button.setWidth(entryWidth);
-            button.render(ctx, mouseX, mouseY, delta);
+            ctx.render(button, mouseX, mouseY, delta);
         }
 
         @Override
@@ -537,11 +542,10 @@ class MappingEntryScreen extends Screen {
         }
 
         @Override
-        public void render(
-            GuiGraphics ctx,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx ctx,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -552,7 +556,7 @@ class MappingEntryScreen extends Screen {
             int w = widgetWidth(entryWidth);
             int top = y + (entryHeight - WIDGET_H) / 2;
 
-            ctx.drawString(
+            ctx.text(
                 font,
                 label,
                 x,
@@ -562,7 +566,7 @@ class MappingEntryScreen extends Screen {
 
             widget.setPosition(x + entryWidth - w, top);
             widget.setWidth(w);
-            widget.render(ctx, mouseX, mouseY, delta);
+            ctx.render(widget, mouseX, mouseY, delta);
         }
 
         @Override
@@ -599,24 +603,23 @@ class MappingEntryScreen extends Screen {
                 String trimmed = value.trim();
                 if (trimmed.isEmpty()) {
                     setter.accept(0.0);
-                    field.setTextColor(0xFFFFFF);
+                    field.setTextColor(0xFFFFFFFF);
                     return;
                 }
                 try {
                     setter.accept(Double.parseDouble(trimmed));
-                    field.setTextColor(0xFFFFFF);
+                    field.setTextColor(0xFFFFFFFF);
                 } catch (NumberFormatException ignored) {
-                    field.setTextColor(0xFF5555);
+                    field.setTextColor(0xFFFF5555);
                 }
             });
         }
 
         @Override
-        public void render(
-            GuiGraphics ctx,
-            int index,
-            int y,
+        protected void renderEntry(
+            GuiGfx ctx,
             int x,
+            int y,
             int entryWidth,
             int entryHeight,
             int mouseX,
@@ -627,7 +630,7 @@ class MappingEntryScreen extends Screen {
             int w = Math.max(60, entryWidth - labelColumnWidth() - LABEL_GAP);
             int top = y + (entryHeight - WIDGET_H) / 2;
 
-            ctx.drawString(
+            ctx.text(
                 font,
                 label,
                 x,
@@ -637,7 +640,7 @@ class MappingEntryScreen extends Screen {
 
             field.setPosition(x + entryWidth - w, top);
             field.setWidth(w);
-            field.render(ctx, mouseX, mouseY, delta);
+            ctx.render(field, mouseX, mouseY, delta);
         }
 
         @Override

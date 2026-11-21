@@ -1,37 +1,87 @@
-# https://stonecutter.kikugie.dev/wiki/v2/reference/gradle-api/structured-properties
+# See https://stonecutter.kikugie.dev/wiki/v2/reference/gradle-api/structured-properties
 mod.id = "attributification"
 mod.name = "Attributification"
 mod.group = "dev.utherhel.attributification"
 mod.version = "2.1.0"
 
-deps.fabric_loader = "0.18.4"
+publish.status = "stable"
+publish.dry_run = false
+publish.modrinth = true
+publish.modrinth_id = "Kh7Ccq3T"
+publish.curseforge = true
+publish.curseforge_id = "1465383"
+publish.github = true
+
+deps.fabric_loader = "0.20.1"
 loomx.loom_version = "1.20.0-alpha.31"
 deps.mixin = "0.8.5"
 
 # mod.mc_compat and mod.loader_compat go into fabric.mod.json / mods.toml / neoforge.mods.toml
 
-["1.21.1"]
-mod.pack_format = 48
+["26.3"]
+# List of releases to be marked compatible on Modrinth/Curseforge
+mod.mc_releases = ["26.3"]
 
-["1.20.1"]
-mod.pack_format = 15
+[fabric."26.3"]
+mod.mc_compat = "26.3"
+mod.loader_compat = ">=0.17"
+deps.fabric_api = "0.166.2+26.3"
+
+[neoforge."26.3"]
+mod.mc_compat = "[26.3]"
+mod.loader_compat = "[26.3,)"
+deps.neo_loader = "26.3.0.115"
+
+["26.2"]
+mod.mc_releases = ["26.2"]
+
+[fabric."26.2"]
+mod.mc_compat = "26.2"
+mod.loader_compat = ">=0.17"
+deps.fabric_api = "0.161.0+26.2"
+
+[neoforge."26.2"]
+mod.mc_compat = "[26.2]"
+mod.loader_compat = "[26.2,)"
+deps.neo_loader = "26.2.0.95"
+
+["26.1"]
+mod.mc_releases = ["26.1", "26.1.1", "26.1.2"]
+
+[fabric."26.1"]
+mod.mc_compat = ">=26.1 <=26.1.2"
+mod.loader_compat = ">=0.17"
+deps.fabric_api = "0.155.3+26.1.2"
+
+[neoforge."26.1"]
+mod.mc_compat = "[26.1,26.2)"
+mod.loader_compat = "[26.1,)"
+deps.neo_loader = "26.1.0.19-beta"
+
+["1.21.1"]
+mod.mc_releases = ["1.21.1"]
+mod.pack_format = 48
 
 [fabric."1.21.1"]
 mod.mc_compat = "~1.21.1"
 mod.loader_compat = ">=0.16.5"
-deps.fabric_api = "0.103.0+1.21.1"
+deps.fabric_api = "0.116.18+1.21.1"
 
 [neoforge."1.21.1"]
-mod.mc_compat = "[1.21.1,)"
+mod.mc_compat = "[1.21.1,1.22)"
 mod.loader_compat = "[21.1,)"
 deps.neo_loader = "21.1.267"
+
+["1.20.1"]
+mod.mc_releases = ["1.20.1"]
+mod.pack_format = 15
 
 [fabric."1.20.1"]
 mod.mc_compat = "~1.20.1"
 mod.loader_compat = ">=0.19.3"
-deps.fabric_api = "0.92.11+1.20.1"
+deps.fabric_api = "0.92.12+1.20.1"
 
 [forge."1.20.1"]
-mod.mc_compat = "[1.20.1,)"
+mod.mc_compat = "[1.20.1,1.21)"
 mod.loader_compat = "[47,)"
 deps.forge_loader = "1.20.1-47.4.29"

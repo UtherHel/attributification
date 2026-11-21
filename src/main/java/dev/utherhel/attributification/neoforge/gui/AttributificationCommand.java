@@ -29,7 +29,7 @@ public final class AttributificationCommand {
     public static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(
                 literal("attributification")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(dev.utherhel.attributification.gui.network.AdminGate::isOperator)
                         .then(literal("gui")
                                 .executes(ctx -> {
                                     CommandSourceStack source = ctx.getSource();
