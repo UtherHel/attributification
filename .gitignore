@@ -71,3 +71,7 @@ AGENTS.md
 
 # Windows artifact: `> nul` redirection in a POSIX shell creates a real file
 nul
+
+# dotenv (publishing tokens, local only)
+.env
+.env.*
