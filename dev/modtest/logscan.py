@@ -20,6 +20,7 @@ NOISE = [
     r"OFFLINE/INSECURE|online-mode|authenticate usernames|hackers to connect|Server is running in offline mode",
     r"Failed to fetch user properties|InvalidCredentials|YggdrasilUserApiService|authlib|Realms|realms",
     r"Failed to request yggdrasil public key|Yggdrasil Key Fetcher",
+    r"Failed to request Minecraft Services public key|Minecraft Services Discovery",  # the 26.x wording of the above
     r"Narrator|libflite|OpenAL|Failed to open OpenAL|Error initializing sound|SoundEngine|[Ss]ound ?[Ss]ystem",
     r"telemetry|Telemetry|TelemetryEventInstance|Failed to send telemetry",
     r"Can't keep up! Is the server overloaded",
