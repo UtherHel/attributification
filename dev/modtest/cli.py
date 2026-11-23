@@ -294,6 +294,8 @@ def mp_run(proj: Project, t: Target, case: str, args, port: int) -> Result:
             if cres.get("error"):
                 res.notes.append(f"client: {cres['error']}")
             res.checks.append((bool(joined), "server/join", "the client joined" if joined else "the client never joined"))
+            if not joined and srv.live_threads():  # where the server was while the client could not get in
+                res.notes.append("server thread dump: server/threads.txt")
             th.join(timeout + 60)
             if modded_server and srv.wait_exit(120) is None:
                 res.notes.append("server self-test did not finish after the session")
