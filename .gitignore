@@ -78,3 +78,7 @@ nul
 
 # Icons, logos and old release jars (local only)
 /branding/
+
+# dev/modtest: run work dirs and Python caches
+/dev/.work/
+__pycache__/
