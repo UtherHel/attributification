@@ -62,13 +62,6 @@ The built-in mappings are the mod's own data-pack file, `data/attributification/
 
 **Same idea, for effects:** [Effectification](https://modrinth.com/mod/effectification).
 
-<!-- hosting:start -->
-<!-- Hosting banner: uncomment one line and put your partner link in place of the site address. -->
-<!-- [![BisectHosting](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/hosting/bisecthosting.webp)](https://www.bisecthosting.com/) -->
-<!-- [![Kinetic Hosting](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/hosting/kinetichosting.webp)](https://www.kinetichosting.com/) -->
-<!-- [![Nodecraft](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/hosting/nodecraft.webp)](https://nodecraft.com/) -->
-<!-- hosting:end -->
-
 <!-- promo:start -->
 <!-- More from UtherHel: promo cards of other mods go here, two per row, as in the other pages. -->
 <!-- promo:end -->
