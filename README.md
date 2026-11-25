@@ -13,9 +13,6 @@
 - **An editor in the game.** `/attributification gui` (operators) lists every mapping file and edits it, with a search over all attributes. Your files are saved to a data pack in the world. Configs from Attributification 2.0 are found and converted when you ask.
 - **Ready-made mappings,** 46 of them, for Spell Power, Iron's Spells, Apothic Attributes, Obscure API, Turtleboi's Core Library, GTBC's SpellLib, Ars Nouveau, Eidolon, Goety, Lodestone, Wizard's Reborn, Ranged Weapon API, More RPG Classes and Iter RPG. A mapping for mods you don't have does nothing.
 
-| ![Attributification icon](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/clips/icon.webp) | ![Attributes from several mods turning into one](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/clips/mapping.webp) |
-| --- | --- |
-
 ![How to use](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/desc/title-how-to-use.webp)
 
 Install it next to the mods whose attributes overlap. The built-in mappings start working on their own: a ring with Spell Power's Fire now raises Iron's Spells' Fire Spell Power, and `/attribute @s spell_power:fire get` still answers, with the unified value.
