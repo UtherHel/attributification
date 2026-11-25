@@ -1,5 +1,11 @@
 ![Attributification](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/banner.webp)
 
+<p align="center">
+<a href="https://www.curseforge.com/minecraft/mc-mods/attributification"><img src="https://raw.githubusercontent.com/UtherHel/attributification/main/docs/desc/button-curseforge.webp" alt="CurseForge" height="40"></a>
+<a href="https://modrinth.com/mod/attributification"><img src="https://raw.githubusercontent.com/UtherHel/attributification/main/docs/desc/button-modrinth.webp" alt="Modrinth" height="40"></a>
+<a href="https://github.com/UtherHel/attributification"><img src="https://raw.githubusercontent.com/UtherHel/attributification/main/docs/desc/button-github.webp" alt="GitHub" height="40"></a>
+</p>
+
 **Two mods, one Fire Spell Power.** Spell Power counts fire power in points, Iron's Spells in percent, and gear from each mod feeds only its own number. Attributification maps an attribute of one mod onto the matching attribute of another: item bonuses move over at the right scale, and the old attribute keeps answering with the new value, so nothing that reads it breaks. Mappings are data-pack files; edit them in game or by hand. Minecraft Java 1.20 to 26.3: Fabric 1.20 - 26.3, Forge 1.20.1, NeoForge 1.20.3 - 1.20.6, 1.21.1 - 1.21.5 and 1.21.7 - 26.3. Install it on the server and on every client; Fabric needs Fabric API.
 
 ![Features](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/desc/title-features.webp)
@@ -55,6 +61,13 @@ The built-in mappings are the mod's own data-pack file, `data/attributification/
 **Logging:** `logLevel` (`NONE`, `ERRORS`, `WARNINGS`, `ALL`; default `ERRORS`) in `config/attributification.json` on Fabric or `config/attributification-common.toml` on Forge and NeoForge. A data pack can set it per world in `data/<namespace>/attributification/config.json`.
 
 **Same idea, for effects:** [Effectification](https://modrinth.com/mod/effectification).
+
+<!-- hosting:start -->
+<!-- Hosting banner: uncomment one line and put your partner link in place of the site address. -->
+<!-- [![BisectHosting](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/hosting/bisecthosting.webp)](https://www.bisecthosting.com/) -->
+<!-- [![Kinetic Hosting](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/hosting/kinetichosting.webp)](https://www.kinetichosting.com/) -->
+<!-- [![Nodecraft](https://raw.githubusercontent.com/UtherHel/attributification/main/docs/hosting/nodecraft.webp)](https://nodecraft.com/) -->
+<!-- hosting:end -->
 
 <!-- promo:start -->
 <!-- More from UtherHel: promo cards of other mods go here, two per row, as in the other pages. -->
