@@ -60,6 +60,16 @@ public final class AttributificationClientGuiSetup {
         AttributificationPayloadHandler.fileContentHandler = (n, c) -> MappingsScreen.deliverFileContent(n, c);
         AttributificationPayloadHandler.attributesHandler = MappingsScreen::deliverAttributes;
         AttributificationPayloadHandler.legacyCountHandler = MappingsScreen::deliverLegacyCount;
+
+        // the server's mappings stop applying when the client leaves the server
+        //? if forge {
+        /^net.minecraftforge.common.MinecraftForge.EVENT_BUS.addListener(
+            (net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut e) ->
+        ^///?} else {
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut e) ->
+        //?}
+                dev.utherhel.attributification.attribute.MappingSync.clear());
     }
 }
 *///?}

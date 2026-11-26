@@ -72,7 +72,8 @@ public final class AttributificationPayloadHandler {
      ^/
     @SubscribeEvent
     public static void register(final RegisterPayloadHandlersEvent event) {
-        final var registrar = event.registrar(Attributifaction.MOD_ID);
+        // 2: mapping files travel compressed, and the server sends its mappings to the clients
+        final var registrar = event.registrar(Attributifaction.MOD_ID).versioned("2");
 
         // ── Server → Client ────────────────────────────────────────────
         // The no-op / callback approach: the actual client logic is wired
@@ -132,6 +133,15 @@ public final class AttributificationPayloadHandler {
                     );
                 }
             }
+        );
+
+        // The server's mappings for client-side values and tooltips (dev.utherhel.attributification.attribute.MappingSync)
+        registrar.playToClient(
+            SyncMappingsPayload.ID,
+            SyncMappingsPayload.CODEC,
+            (payload, context) -> context.enqueueWork(() ->
+                dev.utherhel.attributification.attribute.MappingSync.apply(payload)
+            )
         );
 
         registrar.playToServer(

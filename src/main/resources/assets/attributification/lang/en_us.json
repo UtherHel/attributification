@@ -113,6 +113,7 @@
   "gui.attributification.mappings.status.overridden": "Saved %s to this world — it now overrides the original",
   "gui.attributification.mappings.status.deleted": "Deleted",
   "gui.attributification.mappings.status.error": "Error: %s",
+  "gui.attributification.mappings.too_large": "This file is too large to save from the game (%s mappings): split it into several files, or edit the data pack file by hand.",
   "gui.attributification.mappings.status.loaded": "Loaded %s",
   "gui.attributification.mappings.status.no_attributes": "No attributes loaded",
   "gui.attributification.mappings.status.enter_name": "Enter a file name",
