@@ -38,6 +38,14 @@ public final class AttributificationForge {
         //?}
             event.addListener((ResourceManagerReloadListener) MappingLoader::load));
 
+        // The server's mappings to a player who joins (a reload reaches everyone through MappingSync.broadcaster)
+        //? if forge {
+        /^MinecraftForge.EVENT_BUS.addListener((net.minecraftforge.event.OnDatapackSyncEvent event) ->
+        ^///?} else {
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.OnDatapackSyncEvent event) ->
+        //?}
+            AttributificationPayloadHandler.onDatapackSync(event.getPlayerList().getServer(), event.getPlayer()));
+
         //? if forge {
         /^AttributificationPayloadHandler.register();
         ^///?} else {

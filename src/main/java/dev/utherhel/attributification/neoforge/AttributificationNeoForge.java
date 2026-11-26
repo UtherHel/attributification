@@ -18,6 +18,11 @@ import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 //?}
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
+import dev.utherhel.attributification.attribute.MappingSync;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 @Mod(Attributifaction.MOD_ID)
 public final class AttributificationNeoForge {
@@ -40,6 +45,17 @@ public final class AttributificationNeoForge {
 
         // Register GUI event handlers on the mod event bus
         modEventBus.register(AttributificationPayloadHandler.class);
+
+        // After every reload of the mappings, every player gets the new ones
+        MappingSync.broadcaster = payload -> {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server == null) return;
+            server.execute(() -> {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    PacketDistributor.sendToPlayer(player, payload);
+                }
+            });
+        };
     }
 
     /^*
@@ -52,6 +68,11 @@ public final class AttributificationNeoForge {
             .getPlayerList()
             .getServer()
             .getResourceManager();
+        // a player joined: the server's mappings (a reload reaches everyone through MappingSync.broadcaster)
+        ServerPlayer joined = event.getPlayer();
+        if (joined != null) {
+            PacketDistributor.sendToPlayer(joined, MappingSync.payload());
+        }
     }
 
     /^*

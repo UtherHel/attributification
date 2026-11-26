@@ -4,7 +4,9 @@ package dev.utherhel.attributification.fabric.client.gui;
 import dev.kikugie.fletching_table.fabric.Entrypoint;
 import dev.utherhel.attributification.client.gui.MappingsScreen;
 import dev.utherhel.attributification.gui.network.*;
+import dev.utherhel.attributification.attribute.MappingSync;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 @Entrypoint(Entrypoint.CLIENT)
@@ -103,6 +105,14 @@ public final class AttributificationFabricClientGuiSetup
                 });
             }
         );
+        // The server's mappings: client-side values and tooltips use them; they go when leaving the server
+        ClientPlayNetworking.registerGlobalReceiver(
+            SyncMappingsPayload.ID,
+            (payload, context) -> context.client().execute(() -> MappingSync.apply(payload))
+        );
+        ClientPlayConnectionEvents.DISCONNECT.register(
+            (handler, client) -> client.execute(MappingSync::clear)
+        );
     }
 }
 //?}
@@ -123,6 +133,9 @@ import dev.utherhel.attributification.gui.network.SaveMappingFilePayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import dev.utherhel.attributification.attribute.MappingSync;
+import dev.utherhel.attributification.gui.network.SyncMappingsPayload;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.network.FriendlyByteBuf;
@@ -188,6 +201,13 @@ public final class AttributificationFabricClientGuiSetup implements ClientModIni
             LegacyMappingsFoundPayload payload = LegacyMappingsFoundPayload.decode(buf);
             client.execute(() -> MappingsScreen.deliverLegacyCount(payload.count()));
         });
+
+        // The server's mappings: client-side values and tooltips use them; they go when leaving the server
+        ClientPlayNetworking.registerGlobalReceiver(SyncMappingsPayload.ID, (client, handler, buf, responseSender) -> {
+            SyncMappingsPayload payload = SyncMappingsPayload.decode(buf);
+            client.execute(() -> MappingSync.apply(payload));
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> client.execute(MappingSync::clear));
     }
 
     private static void sendToServer(Object payload) {

@@ -16,6 +16,7 @@
 - **Fallback targets.** List several targets and the first one that is installed gets the bonuses: Spell Power's Water goes to Traveloptics' Aqua Spell Power if it is there, otherwise to Iron's Spells' Nature.
 - **Wildcards and exclusions.** `spell_power:*` maps a whole mod at once; `exclude` leaves some of its attributes out.
 - **No double-dipping.** In `fullReplacement` mode the source attribute keeps only its base value and every item bonus goes to the target, so two crit chances from two mods never stack.
+- **Clients see the same numbers.** The server sends its mappings to every player, so the HUD, the inventory and item tooltips match what the server computes.
 - **An editor in the game.** `/attributification gui` (operators) lists every mapping file and edits it, with a search over all attributes. Your files are saved to a data pack in the world. Configs from Attributification 2.0 are found and converted when you ask.
 - **Ready-made mappings,** 46 of them, for Spell Power, Iron's Spells, Apothic Attributes, Obscure API, Turtleboi's Core Library, GTBC's SpellLib, Ars Nouveau, Eidolon, Goety, Lodestone, Wizard's Reborn, Ranged Weapon API, More RPG Classes and Iter RPG. A mapping for mods you don't have does nothing.
 
@@ -58,7 +59,9 @@ Boots with `+6` Spell Power Earth now give `+30%` Geo Spell Power, or Nature Spe
 
 The built-in mappings are the mod's own data-pack file, `data/attributification/attributification/mappings/defaults.json`: a data pack with a file of the same path replaces it.
 
-**Logging:** `logLevel` (`NONE`, `ERRORS`, `WARNINGS`, `ALL`; default `ERRORS`) in `config/attributification.json` on Fabric or `config/attributification-common.toml` on Forge and NeoForge. A data pack can set it per world in `data/<namespace>/attributification/config.json`.
+**Logging:** `logLevel` in `config/attributification.json` on Fabric or `config/attributification-common.toml` on Forge and NeoForge: `NONE`, `ERRORS`, `WARNINGS` (the default: also mistakes in mapping files) or `ALL` (also every conversion, for troubleshooting). A data pack can set it per world in `data/<namespace>/attributification/config.json`.
+
+**Mistakes are reported.** After every load the log names each problem with its file and mapping: an attribute ID with a typo (its mod is installed but has no such attribute), an unknown field or `mode`, a wildcard that matches nothing, a division by zero. Mappings for mods that are not installed are expected in a modpack and only counted. One summary line tells how many mappings are active.
 
 **Same idea, for effects:** [Effectification](https://modrinth.com/mod/effectification).
 

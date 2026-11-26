@@ -41,11 +41,11 @@ public record SaveMappingFilePayload(String fileName, String jsonContent) implem
     *///?}
 
     public static SaveMappingFilePayload decode(FriendlyByteBuf buf) {
-        return new SaveMappingFilePayload(buf.readUtf(), buf.readUtf());
+        return new SaveMappingFilePayload(buf.readUtf(), JsonText.read(buf));
     }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeUtf(this.fileName);
-        buf.writeUtf(this.jsonContent);
+        JsonText.write(buf, this.jsonContent);
     }
 }
