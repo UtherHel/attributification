@@ -50,7 +50,7 @@ final class ClientCompat {
         Files.createDirectories(out.getParent());
 //? if >=26.2 {
 /*        Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget(), img -> write(img, out));
-*///?} else if >=1.21.2 {
+*///?} else if >=1.21.5 {
 /*        Screenshot.takeScreenshot(mc.getMainRenderTarget(), img -> write(img, out));
 *///?} else {
         write(Screenshot.takeScreenshot(mc.getMainRenderTarget()), out);

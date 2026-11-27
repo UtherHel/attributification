@@ -22,6 +22,7 @@ import dev.utherhel.attributification.gui.network.RequestAttributesListPayload;
 import dev.utherhel.attributification.gui.network.RequestMappingFileContentPayload;
 import dev.utherhel.attributification.gui.network.RequestMappingFilesPayload;
 import dev.utherhel.attributification.gui.network.SaveMappingFilePayload;
+import dev.utherhel.attributification.gui.network.SyncMappingsPayload;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -63,7 +64,8 @@ import net.neoforged.fml.loading.FMLPaths;
 
 public final class AttributificationPayloadHandler {
 
-    private static final String PROTOCOL_VERSION = "1";
+    // 2: mapping files travel compressed, and the server sends its mappings to the clients
+    private static final String PROTOCOL_VERSION = "2";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
@@ -81,6 +83,21 @@ public final class AttributificationPayloadHandler {
     public static Consumer<Integer> legacyCountHandler = c -> {};
 
     private static int nextId = 0;
+
+    // The server the last data pack sync came from: a reload by the editor reaches its players
+    private static volatile MinecraftServer syncServer;
+
+    // OnDatapackSyncEvent: a player joined (player set) or the data packs were reloaded (player null)
+    public static void onDatapackSync(MinecraftServer server, ServerPlayer joined) {
+        syncServer = server;
+        if (joined != null) {
+            sendSync(joined, dev.utherhel.attributification.attribute.MappingSync.payload());
+        }
+    }
+
+    private static void sendSync(ServerPlayer player, SyncMappingsPayload payload) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), payload);
+    }
 
     public static void register() {
         registerMessage(OpenGuiPayload.class, OpenGuiPayload::encode, OpenGuiPayload::decode, (msg, ctx) -> {
@@ -199,6 +216,25 @@ public final class AttributificationPayloadHandler {
             });
             ctx.get().setPacketHandled(true);
         });
+
+        // The server's mappings for client-side values and tooltips (dev.utherhel.attributification.attribute.MappingSync)
+        registerMessage(SyncMappingsPayload.class, SyncMappingsPayload::encode, SyncMappingsPayload::decode, (msg, ctx) -> {
+            ctx.get().enqueueWork(() -> {
+                if (ctx.get().getDirection() == NetworkDirection.PLAY_TO_CLIENT) {
+                    dev.utherhel.attributification.attribute.MappingSync.apply(msg);
+                }
+            });
+            ctx.get().setPacketHandled(true);
+        });
+        dev.utherhel.attributification.attribute.MappingSync.broadcaster = payload -> {
+            MinecraftServer server = syncServer;
+            if (server == null) return;
+            server.execute(() -> {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    sendSync(player, payload);
+                }
+            });
+        };
 
         registerMessage(ConvertLegacyMappingsPayload.class, ConvertLegacyMappingsPayload::encode, ConvertLegacyMappingsPayload::decode, (msg, ctx) -> {
             ctx.get().enqueueWork(() -> {

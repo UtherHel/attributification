@@ -39,8 +39,8 @@ public final class AttributificationForgeConfig implements AttributificationConf
     //?}
         builder.comment("Debug and logging configuration").push("debug");
         this.logLevelValue = builder
-            .comment("Logging level: NONE, ERRORS, WARNINGS, ALL")
-            .defineEnum("logLevel", LogLevel.ERRORS);
+            .comment("Log level: NONE, ERRORS, WARNINGS (mapping problems, the default), ALL (every conversion)")
+            .defineEnum("logLevel", LogLevel.WARNINGS);
         builder.pop();
         this.spec = builder.build();
     }
@@ -58,7 +58,7 @@ public final class AttributificationForgeConfig implements AttributificationConf
     /^* Until Forge has loaded the file, the default level is used. ^/
     @Override
     public LogLevel getPlatformLogLevel() {
-        return spec.isLoaded() ? logLevelValue.get() : LogLevel.ERRORS;
+        return spec.isLoaded() ? logLevelValue.get() : LogLevel.WARNINGS;
     }
 }
 *///?}

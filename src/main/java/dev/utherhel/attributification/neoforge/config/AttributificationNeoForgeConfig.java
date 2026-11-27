@@ -23,8 +23,8 @@ public final class AttributificationNeoForgeConfig
     private AttributificationNeoForgeConfig(ModConfigSpec.Builder builder) {
         builder.comment("Debug settings").push("debug");
         this.logLevelValue = builder
-            .comment("Log level: NONE, ERRORS, WARNINGS, ALL")
-            .defineEnum("logLevel", LogLevel.ERRORS);
+            .comment("Log level: NONE, ERRORS, WARNINGS (mapping problems, the default), ALL (every conversion)")
+            .defineEnum("logLevel", LogLevel.WARNINGS);
         builder.pop();
         this.spec = builder.build();
     }

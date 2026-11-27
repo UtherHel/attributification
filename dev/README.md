@@ -1,53 +1,54 @@
-# dev/ — проверка мода в настоящем Minecraft
+# dev/ — testing the mod in real Minecraft
 
-Инструменты разработки по образцу `dev/` у ProfetGit, переписанные под Windows и наши проекты. Мод проверяется не в
-dev-окружении Gradle, а так, как его ставит игрок: собранный jar кладётся на официальный сервер или клиент Fabric,
-Forge или NeoForge нужной версии, вместе с зависимостями из `dev/modtest.toml`. Внутри мода работает самотест
-(`selftest/`): он сам проверяет механику и записывает PASS/FAIL. Скрипт читает результаты и логи и выводит итог.
+Development tools modelled on ProfetGit's `dev/`, rewritten for Windows and these projects. The mod is not tested in
+Gradle's dev environment but the way a player installs it: the built jar goes onto an official Fabric, Forge or
+NeoForge server or client of the right version, together with the dependencies from `dev/modtest.toml`. Inside the
+mod a self-test (`selftest/`) checks the mechanics and records PASS/FAIL. The script reads the results and the logs
+and prints a summary.
 
-## Команды
+## Commands
 
 ```
-python dev/mt.py targets                 цели Stonecutter и собран ли jar текущей версии
-python dev/mt.py build   [цели]          gradlew build (Gradle на JDK 25, тесты пропускаются)
-python dev/mt.py smoke   [цели]          сервер: мод загрузился, все миксины применились, в логе нет ошибок
-python dev/mt.py test    [цели]          сервер + серверные сцены мода (без игроков)
-python dev/mt.py client  [цели]          клиент: титульный экран, миксины клиента, сцены без мира
-python dev/mt.py mp      [цели]          сервер + клиент по сети: сцены с игроком на обеих сторонах
-python dev/mt.py all     [цели]          всё по очереди; цель, упавшая на шаге, дальше не идёт
+python dev/mt.py targets                 Stonecutter targets and whether the current version's jar is built
+python dev/mt.py build   [targets]       gradlew build (Gradle on JDK 25, tests skipped)
+python dev/mt.py smoke   [targets]       server: the mod loaded, every mixin applied, no errors in the log
+python dev/mt.py test    [targets]       server + the mod's server scenes (no players)
+python dev/mt.py client  [targets]       client: title screen, client mixins, scenes without a world
+python dev/mt.py mp      [targets]       server + client over the network: scenes with a player on both sides
+python dev/mt.py all     [targets]       everything in turn; a target that fails a stage goes no further
 ```
 
-Цели — имена или шаблоны через запятую: `1.21.1-fabric`, `1.21.1-*`, `addon-parcool:*`. Без аргумента берутся
-`default_targets` из `dev/modtest.toml`, иначе все цели основного мода. Параметры: `--build` (сначала собрать),
-`-j N` (параллельных серверов), `--keep` (оставить рабочие папки успешных прогонов), `--scene a,b` (только эти сцены),
-`--case both,client_only,server_only` (для `mp`), `--timeout S`, `--visible` (показать окно клиента). Код выхода 0 —
-только если прошло всё.
+Targets are names or patterns, comma separated: `1.21.1-fabric`, `1.21.1-*`, `addon-parcool:*`. Without an argument
+the `default_targets` of `dev/modtest.toml` are used, otherwise every target of the main mod. Options: `--build`
+(build first), `-j N` (parallel servers), `--keep` (keep the work folders of passed runs), `--scene a,b` (only these
+scenes), `--case both,client_only,server_only` (for `mp`), `--timeout S`, `--visible` (show the client window).
+The exit code is 0 only if everything passed.
 
-Итог по каждому прогону печатается в консоль и пишется в `dev/.work/report.md`. Рабочие папки
-`dev/.work/<команда>/<цель>` удаляются после успешного прогона и остаются после провала: там `server/server.log`,
-`game/client.log`, `out/server.json`, `out/client.json` (и `out/shots/*.png` с `--visible`).
+The result of every run is printed to the console and written to `dev/.work/report.md`. The work folders
+`dev/.work/<command>/<target>` are deleted after a passed run and kept after a failure: they hold `server/server.log`,
+`game/client.log`, `out/server.json`, `out/client.json` (and `out/shots/*.png` with `--visible`).
 
-Клиент по умолчанию запускается без окна: LWJGL подменяется копией, пропатченной трансформером
-[HeadlessMc](https://github.com/headlesshq/headlessmc) (MIT; то же, что делает mc-runtime-test в CI), и каждый вызов
-GLFW/OpenGL/OpenAL становится пустым. Игра живёт полностью — тики, экраны, сеть, миксины, — но ничего не рисует и
-не берёт фокус. Пропатченные jar кэшируются в `%LOCALAPPDATA%\utherhel-modtest\hmc`. `--visible` (или
-`MODTEST_VISIBLE=1`) запускает обычный клиент с окном — для скриншотов (`ClientSelfTest.shot`) и ручного взгляда.
+By default the client runs without a window: LWJGL is replaced with a copy patched by the
+[HeadlessMc](https://github.com/headlesshq/headlessmc) transformer (MIT; the same as mc-runtime-test does in CI), and
+every GLFW/OpenGL/OpenAL call becomes a no-op. The game runs fully — ticks, screens, network, mixins — but draws
+nothing and takes no focus. The patched jars are cached in `%LOCALAPPDATA%\utherhel-modtest\hmc`. `--visible` (or
+`MODTEST_VISIBLE=1`) starts the normal client with a window, for screenshots (`ClientSelfTest.shot`) and a look by eye.
 
-## Что проверяется всегда
+## Always checked
 
-| Проверка | Где | Что значит |
+| Check | Where | Meaning |
 |---|---|---|
-| `boot/mod_loaded` | сервер, клиент | лоадер видит мод; в описании лоадер, версия Minecraft и мода |
-| `boot/mixin_audit` | сервер, клиент | `MixinEnvironment.audit()`: каждый миксин этой стороны применился сразу, а не при первом использовании класса |
-| `boot/loaded_<id>` | сервер, клиент | загружены аддон или ожидаемые интеграции (`expect_loaded`) |
-| `server/log`, `client/log` | оба | нет падений, ошибок миксинов, загрузки модов и строк ERROR; шум окружения отфильтрован (`log_noise`) |
-| `server/join` | `mp` | клиент вошёл на сервер |
-| `server/disconnect` | `mp` | игрок не вылетел до конца сессии |
-| `server/exit` | сервер | после `stop` JVM завершилась сама; иначе FAIL с именами живых не-daemon потоков (`server/threads.txt`) |
+| `boot/mod_loaded` | server, client | the loader sees the mod; the detail names the loader, the Minecraft and the mod version |
+| `boot/mixin_audit` | server, client | `MixinEnvironment.audit()`: every mixin of this side applied right away, not on the first use of its class |
+| `boot/loaded_<id>` | server, client | an addon or the expected integrations are loaded (`expect_loaded`) |
+| `server/log`, `client/log` | both | no crashes, mixin or mod loading errors, no ERROR lines; environment noise is filtered (`log_noise`) |
+| `server/join` | `mp` | the client joined the server |
+| `server/disconnect` | `mp` | the player was not kicked before the end of the session |
+| `server/exit` | server | the JVM exited by itself after `stop`; otherwise FAIL with the names of the live non-daemon threads (`server/threads.txt`) |
 
-## Сцены мода
+## The mod's scenes
 
-Сцены лежат в моде: `src/main/java/<пакет>/selftest/Scenarios.java` (сервер) и `ClientScenarios.java` (клиент).
+The scenes live in the mod: `src/main/java/<package>/selftest/Scenarios.java` (server) and `ClientScenarios.java` (client).
 
 ```java
 static void server(Script<MinecraftServer> s) {
@@ -55,46 +56,48 @@ static void server(Script<MinecraftServer> s) {
         s.run(srv -> TestCompat.command(srv, "gamerule doDaylightCycle false"))
             .waitTicks(20)
             .check("rules_loaded", srv -> rules().isEmpty() ? "no rules" : null)       // null = PASS
-            .eventually("applied", 100, srv -> applied() ? null : "not applied yet");  // ждёт до 100 тиков
+            .eventually("applied", 100, srv -> applied() ? null : "not applied yet");  // waits up to 100 ticks
     }
 }
 ```
 
-`Scenarios.server` — сервер без игроков (`test`), `Scenarios.player` — когда вошёл клиент (`mp`, игрок —
-`SelfTest.player(srv)`), `ClientScenarios.title` — клиент с титульного экрана без мира (`client`),
-`ClientScenarios.client` — клиент в мире сервера (`mp`). `ClientSelfTest.shot(mc, "имя")` сохраняет скриншот
-(только с `--visible`; без окна ничего не рисуется, и вызов ничего не делает).
-Шаг, бросивший исключение, проваливает свою сцену, остальные сцены идут дальше.
+`Scenarios.server` — the server without players (`test`), `Scenarios.player` — once a client joined (`mp`, the player
+is `SelfTest.player(srv)`), `ClientScenarios.title` — the client from the title screen without a world (`client`),
+`ClientScenarios.client` — the client in the server's world (`mp`). `ClientSelfTest.shot(mc, "name")` saves a
+screenshot (only with `--visible`; without a window nothing is drawn and the call does nothing).
+A step that throws fails its scene; the other scenes go on.
 
-Самотест спит, пока не задан `-D<modid>.selftest=<папка>`: в обычной игре он стоит одну проверку булевой переменной
-за тик. Его включают в игру два миксина: `SelfTestServerMixin` (тик сервера) и `client/SelfTestClientMixin` (тик клиента).
+The self-test sleeps unless `-D<modid>.selftest=<folder>` is set: in normal play it costs one boolean check per tick.
+Two mixins hook it into the game: `SelfTestServerMixin` (server tick) and `client/SelfTestClientMixin` (client tick).
 
 ## dev/modtest.toml
 
-| Ключ | Значение |
+| Key | Value |
 |---|---|
-| `[runtime]` | моды, без которых мод не запускается: `maven:группа:артефакт:версия`, `curse:slug-id:fileId`, `modrinth:проект:версия` (`modrinth:проект:*` — новейшая версия для лоадера и версии Minecraft цели), `file:путь`. Ключ — лоадер, цель или шаблон; `${deps.x}` берётся из `stonecutter.properties.toml`, `${x:-по умолчанию}` — со значением на случай, если ключа нет |
-| `[runtime_server]`, `[runtime_client]` | то же только для одной стороны |
-| `[files_server."<цель>"]` | файлы в папку сервера до первого запуска, например датапак в `world/datapacks/` или конфиг в `config/`; `${...}` подставляются так же |
-| `[files_client."<цель>"]` | то же для папки клиента (`client` и `mp`), например конфиг, который должен совпадать с серверным |
-| `known_exit_hangs` | регулярные выражения имён потоков: если сервер не завершился после `stop` только из-за них, `server/exit` — PASS с предупреждением (известная, задокументированная проблема) |
-| `server_commands` | команды в консоль сразу после запуска |
-| `default_targets` | цели по умолчанию |
-| `expect_loaded` | по лоадерам: id модов, которые должны загрузиться вместе с модом |
-| `branch_mod_ids` | id мода каждого аддона (ветки Stonecutter) |
-| `log_noise` | регулярные выражения безвредных строк лога |
-| `known_failures` | регулярные выражения имён проверок, которые падают из-за известной, ещё не исправленной ошибки (список или таблица с ключами как у `[runtime]`): такой провал считается пройденным и печатается предупреждением `known issue`; если проверка вдруг прошла — предупреждение «passes now», запись пора убрать |
+| `[runtime]` | mods the mod does not start without: `maven:group:artifact:version`, `curse:slug-id:fileId`, `modrinth:project:version` (`modrinth:project:*` — the newest version for the target's loader and Minecraft version), `file:path`. The key is a loader, a target or a pattern; `${deps.x}` comes from `stonecutter.properties.toml`, `${x:-default}` with a value for when the key is missing |
+| `[runtime_server]`, `[runtime_client]` | the same for one side only |
+| `[files_server."<target>"]` | files put into the server folder before the first start, e.g. a data pack in `world/datapacks/` or a config in `config/`; `${...}` are substituted the same way |
+| `[files_client."<target>"]` | the same for the client folder (`client` and `mp`), e.g. a config that must match the server's |
+| `known_exit_hangs` | regexes of thread names: if the server did not exit after `stop` only because of them, `server/exit` is a PASS with a warning (a known, documented problem) |
+| `server_commands` | console commands right after the start |
+| `default_targets` | the default targets |
+| `expect_loaded` | per loader: ids of mods that must load together with the mod |
+| `branch_mod_ids` | the mod id of every addon (Stonecutter branch) |
+| `log_noise` | regexes of harmless log lines |
+| `known_failures` | regexes of names of checks that fail because of a known, not yet fixed bug (a list, or a table keyed like `[runtime]`): such a failure counts as passed and prints a `known issue` warning; if the check passes after all, a "passes now" warning says the entry can go |
 
-## Где что лежит
+## Where things are
 
-- Установки серверов и клиентов, библиотеки, ассеты, скачанные моды: `%LOCALAPPDATA%\utherhel-modtest`
-  (`MODTEST_HOME`). Ассеты копируются из `%APPDATA%\.minecraft`, если там уже есть.
-- JDK 17/21/25 ищутся в `C:\Program Files\Eclipse Adoptium` и соседних папках; путь можно задать `MODTEST_JDK_<версия>`.
-- Одновременно работают не больше 2 серверов и 1 клиента на всю машину (`MODTEST_SERVER_SLOTS`,
-  `MODTEST_CLIENT_SLOTS`), даже из разных репозиториев. Ожидающие встают в очередь по порядку прихода.
-- mp: если клиент завис на подключении (90 с на экране Connecting) или отвалился по таймауту, прогон повторяется
-  один раз (первая попытка остаётся в `<work>-try1`, дамп потоков клиента — `out/client-threads.txt`). Отказ с
-  причиной (не тот мод, несовпадение реестров, экран перезапуска) — результат мода, он не повторяется.
-- `dev/modtest/` — общая копия харнесса. Правится мастер в `C:\MCProjects\tools\modtest`, потом `python sync.py`.
-  Так же синхронизируются движок самотеста (`Report`, `Script`, `SelfTest`, `ClientSelfTest`, `ModTestHook`) и оба
-  миксина. `TestCompat`, `ClientCompat`, `Scenarios`, `ClientScenarios` принадлежат моду и не перезаписываются.
+- Server and client installs, libraries, assets, downloaded mods: `%LOCALAPPDATA%\utherhel-modtest`
+  (`MODTEST_HOME`). Assets are copied from `%APPDATA%\.minecraft` when they are already there.
+- JDK 17/21/25 are looked up in `C:\Program Files\Eclipse Adoptium` and the folders next to it; a path can be set with
+  `MODTEST_JDK_<version>`.
+- At most 2 servers and 1 client run at the same time on the whole machine (`MODTEST_SERVER_SLOTS`,
+  `MODTEST_CLIENT_SLOTS`), even from different repositories. The waiting ones queue in order of arrival.
+- mp: if the client hangs while connecting (90 s on the Connecting screen) or times out, the run is repeated once
+  (the first attempt stays in `<work>-try1`, the client's thread dump in `out/client-threads.txt`). A refusal with a
+  reason (wrong mod, registry mismatch, restart screen) is a result of the mod and is not repeated.
+- `dev/modtest/` is a shared copy of the harness. The master is edited in `C:\MCProjects\tools\modtest`, then
+  `python sync.py`. The self-test engine (`Report`, `Script`, `SelfTest`, `ClientSelfTest`, `ModTestHook`) and both
+  mixins are synced the same way. `TestCompat`, `ClientCompat`, `Scenarios`, `ClientScenarios` belong to the mod and
+  are not overwritten.

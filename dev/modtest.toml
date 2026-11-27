@@ -7,10 +7,9 @@ default_targets = ["1.21.1-fabric", "1.21.1-neoforge", "1.20.1-forge", "26.3-fab
 # known-harmless log lines (regexes)
 log_noise = []
 
-# Found by the self-test, not fixed yet (a failure here prints "known issue" instead of failing the run): mappings
-# from a server datapack never reach the client (there is no sync packet), so the client computes the vanilla value for
-# a mapped attribute: client-side movement, tooltips and the attribute screen disagree with the server
-known_failures = ["client/client_has_server_mappings", "client/client_luck_matches_server"]
+# Found by the self-test, not fixed yet (a failure here prints "known issue" instead of failing the run): none. The
+# server's mappings reach the clients since the sync packet (attribute/MappingSync), checked by the client scenes.
+known_failures = []
 
 # runtime mods besides the mod jar (published production jars): the mandatory dependencies of fabric.mod.json
 [runtime]

@@ -13,7 +13,9 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -37,6 +39,21 @@ public final class MappingLoader {
     // Currently loaded mappings (volatile for thread-safe read)
     private static volatile List<CompiledMapping> loadedMappings = null;
 
+    /** Identifies the last load in this game, so a client can tell its own integrated server's mappings apart. */
+    private static volatile String token = "";
+
+    /** The fields a mapping can have; anything else is most likely a typo and is reported. */
+    private static final Set<String> FIELDS = Set.of(
+        "source", "sources", "target", "targets", "exclude", "mode", "equivalence",
+        "conversionEquivalence", "subtractValue", "operationConversion", "comment", "_comment"
+    );
+    private static final List<String> MODES = List.of(
+        "bidirectional", "unidirectional", "onlyVisualChange", "fullReplacement"
+    );
+    private static final List<String> OPERATIONS = List.of(
+        "DEFAULT", "ADDITION_TO_MULTIPLY_BASE", "ADDITION_TO_MULTIPLY_TOTAL"
+    );
+
     private MappingLoader() {}
 
     /**
@@ -45,6 +62,16 @@ public final class MappingLoader {
     public static List<CompiledMapping> getMappings() {
         List<CompiledMapping> m = loadedMappings;
         return m != null ? m : List.of();
+    }
+
+    static String token() {
+        return token;
+    }
+
+    /** Client side: replaces the mappings with the ones the server sent (see {@link MappingSync}). */
+    static void useSynced(List<CompiledMapping> mappings) {
+        loadedMappings = List.copyOf(mappings);
+        Attributifaction.reloadAttributeUnifier();
     }
 
     /**
@@ -61,6 +88,8 @@ public final class MappingLoader {
         );
 
         List<CompiledMapping> result = new ArrayList<>();
+        int problems = 0;
+        AttributificationLogger.resetWarnOnce();
 
         // Sorted so that when two datapacks define the same source, which one
         // wins is deterministic instead of depending on map iteration order.
@@ -74,23 +103,43 @@ public final class MappingLoader {
                     StandardCharsets.UTF_8
                 )
             ) {
-                JsonObject root = GSON.fromJson(reader, JsonObject.class);
-                if (root == null || !root.has("mappings")) continue;
+                JsonElement parsed = GSON.fromJson(reader, JsonElement.class);
+                if (parsed == null || !parsed.isJsonObject()) {
+                    AttributificationLogger.warn(fileId + " is not a JSON object like {\"mappings\": [...]}: skipped");
+                    problems++;
+                    continue;
+                }
+                JsonObject root = parsed.getAsJsonObject();
+                if (!root.has("mappings") || !root.get("mappings").isJsonArray()) {
+                    AttributificationLogger.warn(fileId + " has no \"mappings\" list: skipped");
+                    problems++;
+                    continue;
+                }
 
+                int index = 0;
                 for (JsonElement elem : root.getAsJsonArray("mappings")) {
-                    JsonObject obj = elem.getAsJsonObject();
-                    CompiledMapping mapping = parseMapping(obj, fileId);
+                    index++;
+                    String where = fileId + ", mapping " + index;
+                    if (!elem.isJsonObject()) {
+                        AttributificationLogger.warn(where + " is not a JSON object: skipped");
+                        problems++;
+                        continue;
+                    }
+                    CompiledMapping mapping = parseMapping(elem.getAsJsonObject(), where);
                     if (mapping != null) {
                         result.add(mapping);
+                    } else {
+                        problems++;
                     }
                 }
             } catch (Exception e) {
                 AttributificationLogger.warn(
-                    "Failed to load mappings from " +
+                    "Could not read " +
                         fileId +
-                        ": " +
+                        " (is it valid JSON?): " +
                         e.getMessage()
                 );
+                problems++;
             }
         }
 
@@ -102,12 +151,19 @@ public final class MappingLoader {
         } else {
             // Expand wildcards, drop cycles and collapse alias chains before the
             // runtime ever sees a mapping.
+            List<String> knownIds = registeredAttributeIds();
+            int[] compileProblems = {0};
             List<CompiledMapping> compiled = MappingCompiler.compile(
                 result,
-                registeredAttributeIds(),
-                AttributificationLogger::warn
+                knownIds,
+                message -> {
+                    compileProblems[0]++;
+                    AttributificationLogger.warn(message);
+                },
+                AttributificationLogger::info
             );
             loadedMappings = compiled;
+            problems += compileProblems[0];
             AttributificationLogger.info(
                 "Loaded " +
                     result.size() +
@@ -115,10 +171,35 @@ public final class MappingLoader {
                     compiled.size() +
                     " after expansion)"
             );
+            summarize(result.size(), compiled, knownIds, problems);
         }
+
+        token = java.util.UUID.randomUUID().toString();
 
         // Notify the system to rebuild caches
         Attributifaction.reloadAttributeUnifier();
+        MappingSync.broadcast();
+    }
+
+    /** One line: how many mappings work, wait for a mod, or have a problem. */
+    private static void summarize(int entries, List<CompiledMapping> compiled, List<String> knownIds, int problems) {
+        Set<String> known = new java.util.HashSet<>(knownIds);
+        int active = 0;
+        for (CompiledMapping mapping : compiled) {
+            if (!known.contains(mapping.primarySource())) continue;
+            for (String target : mapping.targets()) {
+                if (known.contains(target)) {
+                    active++;
+                    break;
+                }
+            }
+        }
+        AttributificationLogger.summary(
+            entries + " attribute mapping entries (" + compiled.size() + " mappings after wildcards): " + active +
+                " active, " + (compiled.size() - active) +
+                " waiting for mods that are not installed" +
+                (problems > 0 ? ", " + problems + " problem(s) (see the warnings above)" : "") + "."
+        );
     }
 
     /**
@@ -148,9 +229,17 @@ public final class MappingLoader {
      */
     private static CompiledMapping parseMapping(
         JsonObject obj,
-        ResourceLocation fileId
+        String fileId
     ) {
         try {
+            for (String key : obj.keySet()) {
+                if (!FIELDS.contains(key)) {
+                    AttributificationLogger.warn(
+                        "Unknown field '" + key + "' in " + fileId + " (ignored)" + suggest(key, FIELDS)
+                    );
+                }
+            }
+
             // ── Sources ──────────────────────────────────────────────────
             List<String> sources = new ArrayList<>();
             // Support both "source" (string) and "sources" (array)
@@ -211,13 +300,34 @@ public final class MappingLoader {
                 "conversionEquivalence",
                 0.0
             );
-            String mode = getString(obj, "mode", "bidirectional");
             double subtractValue = getDouble(obj, "subtractValue", 0.0);
-            String operationConversion = getString(
-                obj,
-                "operationConversion",
-                "DEFAULT"
-            );
+            String where = fileId + " (" + sources.get(0) + ")";
+            if (!Double.isFinite(equivalence) || !Double.isFinite(conversionEquivalence) ||
+                !Double.isFinite(subtractValue)) {
+                AttributificationLogger.warn("Skipping mapping in " + where + ": equivalence, conversionEquivalence" +
+                    " and subtractValue must be numbers");
+                return null;
+            }
+            double divisor = conversionEquivalence != 0.0 ? conversionEquivalence : equivalence;
+            if (divisor == 0.0) {
+                AttributificationLogger.warn("Skipping mapping in " + where + ": item bonuses are divided by" +
+                    " conversionEquivalence (or equivalence when it is left out), which is 0 here");
+                return null;
+            }
+
+            String mode = canonical(getString(obj, "mode", "bidirectional"), MODES);
+            if (mode == null) {
+                AttributificationLogger.warn("Skipping mapping in " + where + ": unknown mode '" +
+                    getString(obj, "mode", "") + "'; use one of " + String.join(", ", MODES));
+                return null;
+            }
+            String operationConversion = canonical(
+                getString(obj, "operationConversion", "DEFAULT"), OPERATIONS);
+            if (operationConversion == null) {
+                AttributificationLogger.warn("Skipping mapping in " + where + ": unknown operationConversion '" +
+                    getString(obj, "operationConversion", "") + "'; use one of " + String.join(", ", OPERATIONS));
+                return null;
+            }
 
             return new CompiledMapping(
                 sources,
@@ -235,6 +345,53 @@ public final class MappingLoader {
             );
             return null;
         }
+    }
+
+    /**
+     * The canonical spelling of {@code value} among {@code allowed}, ignoring case, spaces, '-' and '_'
+     * ("full_replacement" and "FullReplacement" are "fullReplacement"); null when it is none of them.
+     */
+    private static String canonical(String value, List<String> allowed) {
+        String key = squash(value);
+        for (String option : allowed) {
+            if (squash(option).equals(key)) return option;
+        }
+        return null;
+    }
+
+    private static String squash(String value) {
+        return value.replace("_", "").replace("-", "").replace(" ", "").toLowerCase(Locale.ROOT);
+    }
+
+    /** ", did you mean 'x'?" for a field name one or two letters away from a known one. */
+    private static String suggest(String key, Set<String> known) {
+        String best = null;
+        int bestDistance = 3;
+        for (String option : known) {
+            int d = distance(key.toLowerCase(Locale.ROOT), option.toLowerCase(Locale.ROOT));
+            if (d < bestDistance) {
+                bestDistance = d;
+                best = option;
+            }
+        }
+        return best == null ? "" : ", did you mean '" + best + "'?";
+    }
+
+    private static int distance(String a, String b) {
+        int[] prev = new int[b.length() + 1];
+        int[] cur = new int[b.length() + 1];
+        for (int j = 0; j <= b.length(); j++) prev[j] = j;
+        for (int i = 1; i <= a.length(); i++) {
+            cur[0] = i;
+            for (int j = 1; j <= b.length(); j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                cur[j] = Math.min(Math.min(cur[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            int[] t = prev;
+            prev = cur;
+            cur = t;
+        }
+        return prev[b.length()];
     }
 
     private static String getString(JsonObject obj, String key, String def) {

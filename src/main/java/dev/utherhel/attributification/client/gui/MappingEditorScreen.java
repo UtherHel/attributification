@@ -132,6 +132,19 @@ class MappingEditorScreen extends CompatScreen {
 
     private void save() {
         String json = EditableMapping.serializeFile(entries);
+        if (!dev.utherhel.attributification.gui.network.JsonText.fitsToServer(json)) {
+            // too big for one packet to the server: keep the editor open instead of losing the connection
+            if (minecraft != null && minecraft.player != null) {
+                //? if >=26.1 {
+                /*minecraft.player.sendSystemMessage(Component.translatable(
+                    "gui.attributification.mappings.too_large", entries.size()));
+                *///?} else {
+                minecraft.player.displayClientMessage(Component.translatable(
+                    "gui.attributification.mappings.too_large", entries.size()), false);
+                //?}
+            }
+            return;
+        }
         MappingsScreen.callbacks.saveFile(fileId, json);
         parent.onSaved(MappingFileNames.fileNameOf(fileId), mode);
         onClose();
@@ -409,6 +422,14 @@ class MappingEditorScreen extends Screen {
 
     private void save() {
         String json = EditableMapping.serializeFile(entries);
+        if (!dev.utherhel.attributification.gui.network.JsonText.fitsToServer(json)) {
+            // too big for one packet to the server: keep the editor open instead of losing the connection
+            if (minecraft != null && minecraft.player != null) {
+                minecraft.player.displayClientMessage(Component.translatable(
+                    "gui.attributification.mappings.too_large", entries.size()), false);
+            }
+            return;
+        }
         MappingsScreen.callbacks.saveFile(fileId, json);
         parent.onSaved(MappingFileNames.fileNameOf(fileId), mode);
         onClose();
