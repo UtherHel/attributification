@@ -34,7 +34,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import dev.utherhel.attributification.attribute.MappingSync;
+import dev.utherhel.attributification.gui.network.SyncMappingsPayload;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.SharedConstants;
@@ -114,6 +118,27 @@ public final class AttributificationFabricPayloadHandler {
             ConvertLegacyMappingsPayload.ID,
             ConvertLegacyMappingsPayload.CODEC
         );
+
+        s2c().register(
+            SyncMappingsPayload.ID,
+            SyncMappingsPayload.CODEC
+        );
+
+        // The server's mappings go to every player who joins, and to all of them after every reload
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            currentServer = server;
+            sendSync(handler.player, MappingSync.payload());
+        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> currentServer = null);
+        MappingSync.broadcaster = payload -> {
+            MinecraftServer server = currentServer;
+            if (server == null) return;
+            server.execute(() -> {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    sendSync(player, payload);
+                }
+            });
+        };
 
         // Register receivers
         ServerPlayNetworking.registerGlobalReceiver(
@@ -263,6 +288,14 @@ public final class AttributificationFabricPayloadHandler {
 
     public static void setResourceManager(ResourceManager manager) {
         currentResourceManager = manager;
+    }
+
+    private static volatile MinecraftServer currentServer;
+
+    private static void sendSync(ServerPlayer player, SyncMappingsPayload payload) {
+        if (ServerPlayNetworking.canSend(player, SyncMappingsPayload.ID)) {
+            ServerPlayNetworking.send(player, payload);
+        }
     }
 
     private static MappingFilesListPayload buildFileList(
@@ -559,7 +592,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import dev.utherhel.attributification.attribute.MappingSync;
+import dev.utherhel.attributification.gui.network.SyncMappingsPayload;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.S2CPlayChannelEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.FriendlyByteBuf;
@@ -577,6 +614,7 @@ public final class AttributificationFabricPayloadHandler {
         .create();
 
     public static void register() {
+        registerSync();
         ServerPlayNetworking.registerGlobalReceiver(RequestMappingFilesPayload.ID, (server, player, handler, buf, responseSender) -> {
             server.execute(() -> {
                 if (!dev.utherhel.attributification.gui.network.AdminGate.isAllowed(player)) {
@@ -665,6 +703,36 @@ public final class AttributificationFabricPayloadHandler {
                 }
             });
         });
+    }
+
+    private static volatile MinecraftServer currentServer;
+
+    // The server's mappings to a player once the client registers the channel, and to all after a reload
+    private static void registerSync() {
+        S2CPlayChannelEvents.REGISTER.register((handler, sender, server, channels) -> {
+            if (channels.contains(SyncMappingsPayload.ID)) {
+                currentServer = server;
+                sendSync(handler.player, MappingSync.payload());
+            }
+        });
+        ServerLifecycleEvents.SERVER_STOPPED.register(server -> currentServer = null);
+        MappingSync.broadcaster = payload -> {
+            MinecraftServer server = currentServer;
+            if (server == null) return;
+            server.execute(() -> {
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    sendSync(player, payload);
+                }
+            });
+        };
+    }
+
+    private static void sendSync(ServerPlayer player, SyncMappingsPayload payload) {
+        if (ServerPlayNetworking.canSend(player, SyncMappingsPayload.ID)) {
+            FriendlyByteBuf buf = PacketByteBufs.create();
+            payload.encode(buf);
+            ServerPlayNetworking.send(player, SyncMappingsPayload.ID, buf);
+        }
     }
 
     private static void sendToPlayer(ServerPlayer player, Object payload) {

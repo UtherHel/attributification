@@ -8,10 +8,10 @@ import java.util.List;
 public final class Attributifaction {
 
     public static final String MOD_ID = "attributification";
-    private static AttributeUnifier attributeUnifier;
+    private static volatile AttributeUnifier attributeUnifier;
     private static AttributificationConfig config;
     private static boolean isFabric = false;
-    private static long attributeUnifierVersion = 0; // Incremented on each reload
+    private static volatile long attributeUnifierVersion = 0; // Incremented on each reload
 
     // List of cache clear callbacks to call when config reloads
     private static final List<Runnable> cacheClearCallbacks = new ArrayList<>();
@@ -96,12 +96,6 @@ public final class Attributifaction {
 
         AttributificationLogger.info(
             "Reloaded " + config.getMappings().size() + " attribute mappings"
-        );
-        AttributificationLogger.warn(
-            "NOTE: Static mappings require restart to take effect"
-        );
-        AttributificationLogger.info(
-            "Runtime updates: dynamic mappings, equivalence, operation conversions"
         );
     }
 

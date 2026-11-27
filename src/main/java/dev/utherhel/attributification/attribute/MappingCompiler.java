@@ -49,12 +49,41 @@ public final class MappingCompiler {
         Collection<String> knownIds,
         Consumer<String> log
     ) {
-        List<CompiledMapping> expanded = expandAll(raw, knownIds, log);
-        Map<String, CompiledMapping> bySource = indexBySource(expanded, log);
-        removeCycles(bySource, log);
-        flattenChains(bySource, log);
-        warnUnknownTargets(bySource, knownIds, log);
+        return compile(raw, knownIds, log, log);
+    }
+
+    /**
+     * @param problems receives what is most likely a mistake (a typo in an ID, an impossible wildcard)
+     * @param waiting  receives what only waits for a mod that is not installed (expected in a modpack)
+     */
+    public static List<CompiledMapping> compile(
+        List<CompiledMapping> raw,
+        Collection<String> knownIds,
+        Consumer<String> problems,
+        Consumer<String> waiting
+    ) {
+        Set<String> namespaces = namespaces(knownIds);
+        List<CompiledMapping> expanded = expandAll(raw, knownIds, namespaces, problems, waiting);
+        Map<String, CompiledMapping> bySource = indexBySource(expanded, problems);
+        removeCycles(bySource, problems);
+        flattenChains(bySource, problems);
+        warnUnknownIds(bySource, knownIds, namespaces, problems, waiting);
         return List.copyOf(bySource.values());
+    }
+
+    /** The namespaces of the registered attributes: a mod whose namespace is absent is not installed. */
+    public static Set<String> namespaces(Collection<String> knownIds) {
+        Set<String> out = new HashSet<>();
+        for (String id : knownIds) {
+            int colon = id.indexOf(':');
+            if (colon > 0) out.add(id.substring(0, colon));
+        }
+        return out;
+    }
+
+    private static String namespaceOf(String id) {
+        int colon = id.indexOf(':');
+        return colon > 0 ? id.substring(0, colon) : "";
     }
 
     // ── 1–2. Validation and wildcard expansion ────────────────────────────
@@ -62,10 +91,14 @@ public final class MappingCompiler {
     private static List<CompiledMapping> expandAll(
         List<CompiledMapping> raw,
         Collection<String> knownIds,
-        Consumer<String> log
+        Set<String> namespaces,
+        Consumer<String> log,
+        Consumer<String> waiting
     ) {
         List<CompiledMapping> out = new ArrayList<>();
+        Set<String> known = new HashSet<>(knownIds);
         for (CompiledMapping mapping : raw) {
+            warnUnknownSources(mapping, known, namespaces, log);
             for (String source : mapping.sources()) {
                 if (!isValidId(source, "source", log)) continue;
                 if (wildcardCount(source) == 0) {
@@ -75,7 +108,7 @@ public final class MappingCompiler {
                     }
                     continue;
                 }
-                out.addAll(expandWildcard(mapping, source, knownIds, log));
+                out.addAll(expandWildcard(mapping, source, knownIds, namespaces, log, waiting));
             }
         }
         return out;
@@ -93,7 +126,9 @@ public final class MappingCompiler {
         CompiledMapping mapping,
         String source,
         Collection<String> knownIds,
-        Consumer<String> log
+        Set<String> namespaces,
+        Consumer<String> log,
+        Consumer<String> waiting
     ) {
         int sourceWildcards = wildcardCount(source);
 
@@ -152,14 +187,40 @@ public final class MappingCompiler {
         }
 
         if (out.isEmpty()) {
-            log.accept(
+            String ns = namespaceOf(source);
+            boolean modAbsent = !knownIds.isEmpty() && !ns.contains("*") && !namespaces.contains(ns);
+            (modAbsent ? waiting : log).accept(
                 "Wildcard source '" +
                     source +
                     "' matched no registered attributes" +
-                    (excluded > 0 ? " (" + excluded + " excluded)" : "")
+                    (excluded > 0 ? " (" + excluded + " excluded)" : "") +
+                    (modAbsent ? " (no mod with the namespace '" + ns + "' is installed)" : "")
             );
         }
         return out;
+    }
+
+    /**
+     * A source that is not registered although its mod is installed is almost always a typo, unless
+     * another source of the same mapping is registered: a mapping may list an attribute under the IDs
+     * of several game versions ("minecraft:generic.luck" and "minecraft:luck").
+     */
+    private static void warnUnknownSources(
+        CompiledMapping mapping,
+        Set<String> known,
+        Set<String> namespaces,
+        Consumer<String> log
+    ) {
+        if (known.isEmpty()) return;
+        List<String> typos = new ArrayList<>();
+        for (String source : mapping.sources()) {
+            if (wildcardCount(source) > 0 || known.contains(source)) return;
+            if (namespaces.contains(namespaceOf(source))) typos.add(source);
+        }
+        if (!typos.isEmpty()) {
+            log.accept("No attribute " + String.join(", ", typos) + " is registered although its mod is" +
+                " installed (source of a mapping): check the spelling");
+        }
     }
 
     /** Drops targets that point back at the source; those convert nothing. */
@@ -352,25 +413,36 @@ public final class MappingCompiler {
      * so a missing target is expected rather than broken — but it is also what a
      * typo looks like, and silence makes the two indistinguishable.
      */
-    private static void warnUnknownTargets(
+    private static void warnUnknownIds(
         Map<String, CompiledMapping> bySource,
         Collection<String> knownIds,
-        Consumer<String> log
+        Set<String> namespaces,
+        Consumer<String> log,
+        Consumer<String> waiting
     ) {
         if (knownIds.isEmpty()) return;
         Set<String> known = new HashSet<>(knownIds);
-        int missing = 0;
-        for (CompiledMapping mapping : bySource.values()) {
+        int waitingCount = 0;
+        for (Map.Entry<String, CompiledMapping> entry : bySource.entrySet()) {
+            String source = entry.getKey();
+            CompiledMapping mapping = entry.getValue();
+            // An unregistered target whose mod is installed is almost always a typo, when no other
+            // (fallback) target is registered; one whose namespace is absent just waits for that mod.
+            boolean anyTarget = false;
+            List<String> typos = new ArrayList<>();
             for (String target : mapping.targets()) {
-                if (!known.contains(target)) missing++;
+                if (known.contains(target)) anyTarget = true;
+                else if (namespaces.contains(namespaceOf(target))) typos.add(target);
             }
+            if (!anyTarget && !typos.isEmpty() && known.contains(source)) {
+                log.accept("No attribute " + String.join(", ", typos) + " is registered although its mod is" +
+                    " installed (target of '" + source + "'): check the spelling");
+            }
+            if (!anyTarget || !known.contains(source)) waitingCount++;
         }
-        if (missing > 0) {
-            log.accept(
-                missing +
-                    " mapping target(s) are not registered attributes — expected if" +
-                    " the owning mod is absent, otherwise check for typos"
-            );
+        if (waitingCount > 0) {
+            waiting.accept(waitingCount + " mapping(s) wait for mods that are not installed" +
+                " (their source or every target is not registered); they do nothing until then");
         }
     }
 

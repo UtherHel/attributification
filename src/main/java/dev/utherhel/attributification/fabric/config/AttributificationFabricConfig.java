@@ -28,7 +28,7 @@ public class AttributificationFabricConfig implements AttributificationConfig {
         .getConfigDir()
         .resolve("attributification.json");
 
-    private LogLevel logLevel = LogLevel.ERRORS;
+    private LogLevel logLevel = LogLevel.WARNINGS;
 
     public AttributificationFabricConfig() {}
 
@@ -50,14 +50,14 @@ public class AttributificationFabricConfig implements AttributificationConfig {
                     if (debug.has("logLevel")) {
                         String levelStr = debug.get("logLevel").getAsString();
                         try {
-                            this.logLevel = LogLevel.valueOf(levelStr);
+                            this.logLevel = LogLevel.valueOf(levelStr.trim().toUpperCase(java.util.Locale.ROOT));
                         } catch (IllegalArgumentException e) {
                             AttributificationLogger.warn(
                                 "Unknown logLevel '" +
                                     levelStr +
-                                    "', using ERRORS"
+                                    "' (use NONE, ERRORS, WARNINGS or ALL), using WARNINGS"
                             );
-                            this.logLevel = LogLevel.ERRORS;
+                            this.logLevel = LogLevel.WARNINGS;
                         }
                     }
                 }

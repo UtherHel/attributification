@@ -34,6 +34,11 @@ public final class AttributificationClientGuiSetup {
 
     @SubscribeEvent
     public static void onClientSetup(final FMLClientSetupEvent event) {
+        // the server's mappings stop applying when the client leaves the server
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingOut e) ->
+                dev.utherhel.attributification.attribute.MappingSync.clear()
+        );
         event.enqueueWork(() -> {
             // ── Set screen callbacks ────────────────────────────────────
             MappingsScreen.callbacks = new MappingsScreen.Callbacks() {

@@ -113,6 +113,7 @@
   "gui.attributification.mappings.status.overridden": "%s сохранён в мир — теперь он переопределяет оригинал",
   "gui.attributification.mappings.status.deleted": "Удалено",
   "gui.attributification.mappings.status.error": "Ошибка: %s",
+  "gui.attributification.mappings.too_large": "Файл слишком большой, чтобы сохранить его из игры (замен: %s): разделите его на несколько файлов или отредактируйте файл датапака вручную.",
   "gui.attributification.mappings.status.loaded": "Загружено %s",
   "gui.attributification.mappings.status.no_attributes": "Атрибуты не загружены",
   "gui.attributification.mappings.status.enter_name": "Введите имя файла",

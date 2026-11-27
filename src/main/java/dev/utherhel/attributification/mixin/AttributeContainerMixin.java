@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -31,7 +31,7 @@ public class AttributeContainerMixin {
     
     // Cache: source -> target (or source if no mapping)
     @Unique
-    private static final Map<Holder<Attribute>, Holder<Attribute>> lookupCache = new HashMap<>();
+    private static final Map<Holder<Attribute>, Holder<Attribute>> lookupCache = new ConcurrentHashMap<>(); // the server and the client render thread look up at once in single player
     
     // Register cache clear callback on class load
     static {
@@ -61,8 +61,8 @@ public class AttributeContainerMixin {
                 if (!self.hasAttribute(target)) {
                     String sourceId = AttributeUtils.getAttributeId(attribute);
                     String targetId = AttributeUtils.getAttributeId(target);
-                    AttributificationLogger.warn("[AttributeContainer] Target attribute does not exist on entity: " + 
-                        targetId + " (mapped from " + sourceId + ")");
+                    AttributificationLogger.infoOnce("missing " + sourceId + " " + targetId, "Some entities have no attribute " +
+                        targetId + ", the target of " + sourceId + ": on them " + sourceId + " keeps its own value");
                     return;
                 }
                 
@@ -139,8 +139,9 @@ public class AttributeContainerMixin {
             
             // CRITICAL: Check if entity actually has the target attribute before trying to access it
             if (!self.hasAttribute(target)) {
-                AttributificationLogger.warn("[AttributeContainer] Target attribute does not exist on entity: " + 
-                    AttributeUtils.getAttributeId(target) + " (mapped from " + sourceId + ")");
+                AttributificationLogger.infoOnce("missing " + sourceId + " " + AttributeUtils.getAttributeId(target),
+                    "Some entities have no attribute " + AttributeUtils.getAttributeId(target) + ", the target of " +
+                    sourceId + ": on them " + sourceId + " keeps its own value");
                 return;
             }
             
@@ -203,8 +204,9 @@ public class AttributeContainerMixin {
             
             // CRITICAL: Check if entity actually has the target attribute before trying to access it
             if (!self.hasAttribute(target)) {
-                AttributificationLogger.warn("[AttributeContainer] Target attribute does not exist on entity: " + 
-                    AttributeUtils.getAttributeId(target) + " (mapped from " + sourceId + ")");
+                AttributificationLogger.infoOnce("missing " + sourceId + " " + AttributeUtils.getAttributeId(target),
+                    "Some entities have no attribute " + AttributeUtils.getAttributeId(target) + ", the target of " +
+                    sourceId + ": on them " + sourceId + " keeps its own value");
                 return;
             }
             
@@ -298,7 +300,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -315,7 +317,7 @@ public class AttributeContainerMixin {
     
     // Cache: source -> target (or source if no mapping)
     @Unique
-    private static final Map<Attribute, Attribute> lookupCache = new HashMap<>();
+    private static final Map<Attribute, Attribute> lookupCache = new ConcurrentHashMap<>(); // the server and the client render thread look up at once in single player
     
     // Register cache clear callback on class load
     static {
